@@ -156,6 +156,114 @@ enum PDFBericht {
         }
     }
 
+    // MARK: Wochenbericht
+
+    static func wochenbericht(_ b: Wochenbericht) -> Data {
+        let renderer = UIGraphicsPDFRenderer(bounds: seite, format: info(
+            titel: "Wochenbericht Versand \(b.kurzzeitraum)"
+        ))
+
+        return renderer.pdfData { ctx in
+            var y = neueSeite(ctx, titel: "Wochenbericht Versand")
+
+            y = ueberschrift(b.zeitraum, y: y)
+            y += 4
+            y = feld("Erstellt", Date().datumUndZeit, y: y)
+
+            // Zeit
+            y += 14
+            y = ueberschrift("Zeit", y: y, groesse: 13)
+            y += 2
+            y = feld("Gearbeitet", b.arbeitszeit.alsStundenMinuten, y: y)
+            y = feld("Soll", b.soll.alsStundenMinuten, y: y)
+            y = feld("Saldo Woche", b.saldo.alsSaldo, y: y)
+            y = feld("Konto gesamt", b.kontoGesamt.alsSaldo, y: y)
+            if b.schritte > 0 {
+                y = feld("Schritte", "\(b.schritte)", y: y)
+            }
+
+            if !b.schichten.isEmpty {
+                y += 10
+                for s in b.schichten {
+                    if y > seite.height - rand - 30 {
+                        y = neueSeite(ctx, titel: "Wochenbericht Versand")
+                    }
+                    let tag = "\(s.start.wochentag), \(s.start.datumKurz)"
+                    text(tag, at: CGPoint(x: rand, y: y), breite: 150,
+                         schrift: .systemFont(ofSize: 10), farbe: .darkGray)
+                    let zeiten = "\(s.start.uhrzeit) – \(s.ende?.uhrzeit ?? "läuft")"
+                    text(zeiten, at: CGPoint(x: rand + 156, y: y), breite: 110,
+                         schrift: .monospacedDigitSystemFont(ofSize: 10, weight: .regular))
+                    let dauer = "\(s.arbeitszeit.alsStundenMinuten)   \(s.ende == nil ? "" : s.saldo.alsSaldo)"
+                    text(dauer, at: CGPoint(x: seite.width - rand - 120, y: y), breite: 120,
+                         schrift: .monospacedDigitSystemFont(ofSize: 10, weight: .medium),
+                         ausrichtung: .right)
+                    y += 14
+                }
+            }
+
+            y = abschnitt(ctx, y: y, titel: "Termine nächste Woche", eintraege:
+                b.termine.map { a in
+                    let wann = a.faellig.map { "\($0.wochentag), \($0.uhrzeit)" } ?? "ohne Termin"
+                    return (a.titel, wann)
+                })
+
+            y = abschnitt(ctx, y: y, titel: "Offen", eintraege:
+                b.offeneAufgaben.map { a in
+                    (a.titel, a.istUeberfaellig ? "überfällig" : (a.faellig?.datumKurz ?? ""))
+                })
+
+            y = abschnitt(ctx, y: y, titel: "Notizen dieser Woche", eintraege:
+                b.notizenDerWoche.map { ($0.titel, $0.notiz) })
+
+            y = abschnitt(ctx, y: y, titel: "Fehler dieser Woche", eintraege:
+                b.fehlerRang.map { ($0.0, "\($0.1)×") })
+
+            y = abschnitt(ctx, y: y, titel: "Schäden dieser Woche", eintraege:
+                b.schaeden.map { s in
+                    var rechts = "\(s.fotos.count) Foto\(s.fotos.count == 1 ? "" : "s")"
+                    if !s.spediteur.isEmpty { rechts = "\(s.spediteur) · " + rechts }
+                    return (s.titel, rechts)
+                })
+
+            if b.istLeer {
+                _ = absatz("In dieser Woche wurde nichts erfasst.", y: y + 10)
+            }
+        }
+    }
+
+    /// Ein Abschnitt mit Liste; ueberspringt sich selbst, wenn leer.
+    private static func abschnitt(_ ctx: UIGraphicsPDFRendererContext,
+                                  y: CGFloat,
+                                  titel: String,
+                                  eintraege: [(String, String)]) -> CGFloat {
+        guard !eintraege.isEmpty else { return y }
+        var yy = y + 14
+        if yy > seite.height - rand - 60 {
+            yy = neueSeite(ctx, titel: "Wochenbericht Versand")
+        }
+        yy = ueberschrift("\(titel) (\(eintraege.count))", y: yy, groesse: 13)
+        yy += 2
+
+        for (links, rechts) in eintraege {
+            if yy > seite.height - rand - 30 {
+                yy = neueSeite(ctx, titel: "Wochenbericht Versand")
+            }
+            let breiteLinks = seite.width - rand * 2 - 130
+            let h = text("•  " + links,
+                         at: CGPoint(x: rand, y: yy), breite: breiteLinks,
+                         schrift: .systemFont(ofSize: 11))
+            if !rechts.isEmpty {
+                text(rechts,
+                     at: CGPoint(x: seite.width - rand - 125, y: yy), breite: 125,
+                     schrift: .systemFont(ofSize: 10), farbe: .darkGray,
+                     ausrichtung: .right)
+            }
+            yy += max(h, 14) + 3
+        }
+        return yy
+    }
+
     // MARK: Bausteine
 
     private static func info(titel: String) -> UIGraphicsPDFRendererFormat {

@@ -7,6 +7,7 @@ struct IVTApp: App {
     let behaelter: ModelContainer
     @StateObject private var zeit = Zeitdienst()
     @StateObject private var einstellungen = Einstellungen.shared
+    @StateObject private var wegweiser = Wegweiser.shared
 
     init() {
         let schema = Schema([
@@ -34,10 +35,19 @@ struct IVTApp: App {
             Wurzelansicht()
                 .environmentObject(zeit)
                 .environmentObject(einstellungen)
+                .environmentObject(wegweiser)
                 .task {
+                    Mitteilungsannahme.shared.anmelden()
                     zeit.starten(kontext: behaelter.mainContext)
                     await Meldungen.shared.rechteAnfragen()
                     Meldungen.shared.quartalsauswertungPlanen()
+                    // Termin neu setzen, falls die Einstellung sich geaendert hat
+                    if einstellungen.wochenberichtAktiv {
+                        Meldungen.shared.wochenberichtPlanen(
+                            wochentag: einstellungen.wochenberichtTag,
+                            stunde: einstellungen.wochenberichtStunde,
+                            minute: einstellungen.wochenberichtMinute)
+                    }
                 }
         }
         .modelContainer(behaelter)

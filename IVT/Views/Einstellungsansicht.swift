@@ -71,6 +71,79 @@ struct Einstellungsansicht: View {
                 Text("Nach so langem Stillstand fragt die App, ob es eine Pause war.")
             }
 
+            // MARK: Arbeitsmail
+            Section {
+                HStack {
+                    Text("Adresse")
+                    Spacer()
+                    TextField("vorname.name@ieb.de", text: $e.arbeitsmail)
+                        .multilineTextAlignment(.trailing)
+                        .textContentType(.emailAddress)
+                        .keyboardType(.emailAddress)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .foregroundStyle(e.mailGesetzt ? .secondary : .red)
+                }
+                HStack {
+                    Text("Signatur")
+                    Spacer()
+                    TextField("Name, Funktion", text: $e.absenderzeile)
+                        .multilineTextAlignment(.trailing)
+                        .foregroundStyle(.secondary)
+                }
+            } header: {
+                Text("Arbeitsmail")
+            } footer: {
+                if !Mailfenster.kannMailen {
+                    Text("Auf diesem iPhone ist noch kein Mail-Konto eingerichtet. Ohne Konto kann die App keine Mail öffnen — dann bleibt der Weg über „PDF teilen“.")
+                } else if !e.mailGesetzt {
+                    Text("Ohne Adresse bleiben die Mailknöpfe aus.")
+                }
+            }
+
+            Section {
+                Toggle("Nach jedem Schadensfoto", isOn: $e.mailNachSchaden)
+                    .disabled(!e.mailGesetzt)
+            } header: {
+                Text("Schadensmeldungen")
+            } footer: {
+                Text("Die Mail wird mit Empfänger, Betreff, Text, allen Fotos und dem PDF fertig geöffnet. Auf Senden tippst du selbst — iOS erlaubt keiner App, im Hintergrund Mails zu verschicken.")
+            }
+
+            Section {
+                Toggle("Wochenbericht erinnern", isOn: $e.wochenberichtAktiv)
+                    .disabled(!e.mailGesetzt)
+
+                if e.wochenberichtAktiv {
+                    Picker("Tag", selection: $e.wochenberichtTag) {
+                        ForEach(Einstellungen.wochentage, id: \.0) { tag in
+                            Text(tag.1).tag(tag.0)
+                        }
+                    }
+                    DatePicker("Uhrzeit",
+                               selection: Binding(
+                                   get: { uhrzeit },
+                                   set: { neu in
+                                       let t = Calendar.current.dateComponents([.hour, .minute], from: neu)
+                                       e.wochenberichtStunde = t.hour ?? 13
+                                       e.wochenberichtMinute = t.minute ?? 0
+                                   }),
+                               displayedComponents: .hourAndMinute)
+
+                    if let naechster = Meldungen.shared.naechsterWochenbericht(
+                        wochentag: e.wochenberichtTag,
+                        stunde: e.wochenberichtStunde,
+                        minute: e.wochenberichtMinute) {
+                        LabeledContent("Nächste Erinnerung",
+                                       value: "\(naechster.wochentag), \(naechster.datumKurz), \(naechster.uhrzeit)")
+                    }
+                }
+            } header: {
+                Text("Wochenbericht")
+            } footer: {
+                Text("Termine, offene Aufgaben, Notizen, Fehler und Schäden der Woche, dazu Zeiten und Überstunden. Die Erinnerung öffnet den fertigen Entwurf. Voreinstellung Freitag 13:00, dann ist die Woche komplett.")
+            }
+
             // MARK: Arbeitszeiten (fest, zur Kontrolle)
             Section {
                 LabeledContent("Mo – Do", value: "6:30 – 15:40")
@@ -165,7 +238,7 @@ struct Einstellungsansicht: View {
             } header: {
                 Text("Daten")
             } footer: {
-                Text("Alles bleibt lokal. Kein Server, keine iCloud, keine Weitergabe. Was du teilst, teilst du selbst als PDF oder Foto.")
+                Text("Alles bleibt lokal. Kein Server, keine iCloud, keine Weitergabe. Was rausgeht, geht über deine eigene Mail-App und nur, wenn du auf Senden tippst.")
             }
 
             Section {
@@ -178,6 +251,27 @@ struct Einstellungsansicht: View {
             ToolbarItem(placement: .topBarTrailing) { EditButton() }
         }
         .task { await meldungen.standPruefen() }
+        .onChange(of: e.wochenberichtAktiv) { terminSetzen() }
+        .onChange(of: e.wochenberichtTag) { terminSetzen() }
+        .onChange(of: e.wochenberichtStunde) { terminSetzen() }
+        .onChange(of: e.wochenberichtMinute) { terminSetzen() }
+    }
+
+    private var uhrzeit: Date {
+        Calendar.current.date(bySettingHour: e.wochenberichtStunde,
+                              minute: e.wochenberichtMinute,
+                              second: 0,
+                              of: Date()) ?? Date()
+    }
+
+    private func terminSetzen() {
+        if e.wochenberichtAktiv {
+            Meldungen.shared.wochenberichtPlanen(wochentag: e.wochenberichtTag,
+                                                 stunde: e.wochenberichtStunde,
+                                                 minute: e.wochenberichtMinute)
+        } else {
+            Meldungen.shared.wochenberichtAbsagen()
+        }
     }
 
     private var wochensoll: String {

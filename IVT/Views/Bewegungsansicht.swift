@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import MapKit
+import CoreLocation
 
 struct Bewegungsansicht: View {
     @EnvironmentObject private var zeit: Zeitdienst

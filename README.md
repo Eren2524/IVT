@@ -16,6 +16,44 @@ iPhone** — kein Server, keine iCloud, keine Synchronisierung.
 | **Fehlerbuch** | Fehler in Sekunden erfasst, Quartalsauswertung mit Balken und PDF-Export. |
 | **Bewegung** | Schritte pro Schicht, Route auf der Karte, „Wo war ich um 14:30?“ |
 
+## Mailversand — warum ein Tipp bleibt
+
+**iOS lässt keine App im Hintergrund Mails verschicken.** Es gibt genau zwei
+Wege, und nur einer ist vertretbar:
+
+| Weg | Bewertung |
+|---|---|
+| `MFMailComposeViewController` | Die App legt die Mail vollständig hin — Empfänger, Betreff, Text, Fotos, PDF. Der Mensch tippt auf Senden. **So ist es gebaut.** |
+| Eigenes SMTP in der App | Bräuchte das Firmen-Mail-Passwort im Klartext in der App. Wird von IEB-Mail ohnehin geblockt. Nicht gebaut, und zwar absichtlich. |
+| Server als Relais | Widerspricht „alles bleibt lokal". Nicht gebaut. |
+
+Es ist also **ein Tipp statt null** — aber nichts mehr zu tippen oder anzuhängen.
+
+### Schadensmeldung
+
+Nach jedem Foto (Schalter in den Einstellungen) oder per Knopf im Vorgang:
+
+- **Betreff:** `Schadensmeldung: <Titel> (LS <Lieferschein>)`
+- **Text:** Vorgang, Spediteur, Lieferschein, Zeitpunkt, Ort, Koordinaten, Beschreibung
+- **Anhang:** vollständiger Bericht als PDF plus die ersten sechs Fotos einzeln,
+  damit sie ohne PDF-Betrachter sofort sichtbar sind
+
+### Wochenbericht
+
+Voreinstellung **Freitag 13:00** — nach dem kurzen Freitag ist die Woche
+komplett. Die Mitteilung öffnet den fertigen Entwurf direkt. Drin steht:
+
+- Zeit: gearbeitet, Soll, Wochensaldo, Überstundenkonto, Schritte,
+  dazu jede Schicht einzeln
+- Termine der **kommenden** Woche
+- alles noch Offene, Überfälliges markiert
+- Notizen dieser Woche
+- Fehler dieser Woche, nach Häufigkeit sortiert
+- Schäden dieser Woche
+
+Im Reiter *Mehr → Wochenbericht* lässt sich jede Woche vorher ansehen,
+auch die letzte und vorletzte.
+
 ## Arbeitszeiten (Auslieferungszustand)
 
 ```
@@ -75,7 +113,11 @@ zip -qry IVT.ipa Payload && rm -rf Payload
 2. **Standort auf „Immer“ stellen.** Nur dann erkennt die App Kommen und Gehen
    auch bei geschlossener App. iOS fragt zuerst nur nach „Bei Nutzung“ — die
    zweite Frage kommt separat.
-3. Mitteilungen erlauben, sonst kommt die Pausenfrage nicht durch.
+3. Mitteilungen erlauben, sonst kommt weder die Pausenfrage noch der
+   Wochenbericht durch.
+4. **Einstellungen → Arbeitsmail:** Adresse eintragen. Ohne Adresse bleiben
+   die Mailknöpfe aus. Dann die beiden Schalter setzen: „Nach jedem
+   Schadensfoto" und „Wochenbericht erinnern".
 
 ## Was die App nicht kann
 
@@ -88,6 +130,8 @@ zip -qry IVT.ipa Payload && rm -rf Payload
   reicht das, und korrigieren kannst du jede Schicht per Hand.
 - **Kein Mehrbenutzerbetrieb.** Bewusst: die App ist für einen Menschen,
   die Daten gehören nur ihm.
+- **Mail nicht vollautomatisch.** Siehe oben — Apple lässt das nicht zu.
+  Ohne eingerichtetes Mail-Konto auf dem iPhone bleibt nur „PDF teilen".
 
 ## Struktur
 
@@ -100,14 +144,17 @@ IVT/
     Arbeitsplan.swift     Arbeitszeiten und Soll-Rechnung
     Palettenrechner.swift Stellplatz-Logik des Zuges
     Routenhilfe.swift     Streckenlänge
+    Wochenbericht.swift   Wochendaten zusammentragen
   Services/
     Einstellungen.swift   Vorgaben in UserDefaults
     Standortdienst.swift  Geofence und Route (CoreLocation)
     Bewegungsdienst.swift Schritte und Stillstand (CoreMotion)
     Zeitdienst.swift      hält die Zeiterfassung zusammen
-    Meldungen.swift       lokale Mitteilungen
+    Meldungen.swift       lokale Mitteilungen, Wochentermin
+    Mailversand.swift     fertige Mailentwürfe (MFMailCompose)
+    Wegweiser.swift       Sprung aus der Mitteilung in den Bericht
     Fotostempel.swift     Datum/Zeit/Ort ins Bild brennen
-    PDFBericht.swift      Schadensbericht und Quartalsauswertung
+    PDFBericht.swift      Schadensbericht, Quartals- und Wochenauswertung
   Views/                  Dashboard, Zeit, Laden, Schäden, Aufgaben,
-                          Fehlerbuch, Bewegung, Einstellungen
+                          Fehlerbuch, Bewegung, Wochenbericht, Einstellungen
 ```

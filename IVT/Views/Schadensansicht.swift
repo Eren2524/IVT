@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import SwiftData
 import CoreLocation
 
@@ -160,11 +161,14 @@ struct VorgangDetail: View {
     @Bindable var vorgang: Schadensvorgang
     @Environment(\.modelContext) private var kontext
     @EnvironmentObject private var zeit: Zeitdienst
+    @EnvironmentObject private var e: Einstellungen
 
     @State private var zeigeKamera = false
     @State private var zeigeBibliothek = false
     @State private var zeigeBearbeiten = false
     @State private var pdfDatei: Teilbare?
+    @State private var entwurf: Mailentwurf?
+    @State private var meldung: String?
     @State private var baut = false
 
     init(vorgang: Schadensvorgang) {
@@ -228,6 +232,13 @@ struct VorgangDetail: View {
 
                 Section {
                     Button {
+                        mailVorbereiten()
+                    } label: {
+                        Label("An Arbeitsmail senden", systemImage: "paperplane.fill")
+                    }
+                    .disabled(!e.mailGesetzt)
+
+                    Button {
                         pdfBauen()
                     } label: {
                         HStack {
@@ -239,6 +250,14 @@ struct VorgangDetail: View {
                         }
                     }
                     .disabled(baut)
+                } footer: {
+                    if e.mailGesetzt {
+                        Text(e.mailNachSchaden
+                             ? "Nach jedem Foto wird die Mail an \(e.arbeitsmail) automatisch fertig geöffnet."
+                             : "Mail an \(e.arbeitsmail) mit Fotos und PDF im Anhang.")
+                    } else {
+                        Text("Arbeitsmail in den Einstellungen eintragen, dann geht die Meldung mit einem Tipp raus.")
+                    }
                 }
             }
         }
@@ -259,6 +278,17 @@ struct VorgangDetail: View {
         }
         .sheet(item: $pdfDatei) { datei in
             Teilenblatt(gegenstaende: [datei.url])
+        }
+        .sheet(item: $entwurf) { d in
+            Mailfenster(entwurf: d) { ergebnis in
+                if ergebnis == .sent { meldung = "Schadensmeldung ist raus." }
+            }
+        }
+        .alert("Mail", isPresented: .init(get: { meldung != nil },
+                                          set: { if !$0 { meldung = nil } })) {
+            Button("Gut") { meldung = nil }
+        } message: {
+            Text(meldung ?? "")
         }
         .onChange(of: vorgang.abgeschlossen) { try? kontext.save() }
     }
@@ -289,6 +319,26 @@ struct VorgangDetail: View {
 
         // Fuer das naechste Foto einen frischen Ort holen
         zeit.standort.einmalOrten()
+
+        // Wenn gewuenscht, gleich die Meldung fertig hinlegen
+        if e.mailNachSchaden, e.mailGesetzt {
+            mailVorbereiten()
+        }
+    }
+
+    private func mailVorbereiten() {
+        guard e.mailGesetzt else { return }
+        guard Mailfenster.kannMailen else {
+            meldung = "Auf diesem iPhone ist kein Mail-Konto eingerichtet. Nimm „Als PDF teilen“."
+            return
+        }
+        guard !vorgang.fotos.isEmpty else {
+            meldung = "Noch kein Foto im Vorgang."
+            return
+        }
+        entwurf = Mailtexte.schadensmeldung(vorgang,
+                                            an: e.arbeitsmail,
+                                            absender: e.absenderzeile)
     }
 
     private func pdfBauen() {

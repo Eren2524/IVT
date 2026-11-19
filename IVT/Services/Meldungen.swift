@@ -99,6 +99,46 @@ final class Meldungen: ObservableObject {
         }
     }
 
+    // MARK: Wochenbericht
+
+    static let wochenberichtID = "ivt.wochenbericht"
+
+    /// Wiederkehrende Erinnerung, die den fertigen Mailentwurf oeffnet.
+    func wochenberichtPlanen(wochentag: Int, stunde: Int, minute: Int) {
+        wochenberichtAbsagen()
+
+        let inhalt = UNMutableNotificationContent()
+        inhalt.title = "Wochenbericht"
+        inhalt.body = "Der Bericht für die Arbeitsmail ist fertig. Tippen, prüfen, senden."
+        inhalt.sound = .default
+        inhalt.userInfo = ["ziel": "wochenbericht"]
+
+        var teile = DateComponents()
+        teile.weekday = wochentag
+        teile.hour = stunde
+        teile.minute = minute
+
+        let aus = UNCalendarNotificationTrigger(dateMatching: teile, repeats: true)
+        zentrale.add(UNNotificationRequest(identifier: Self.wochenberichtID,
+                                           content: inhalt,
+                                           trigger: aus))
+    }
+
+    func wochenberichtAbsagen() {
+        zentrale.removePendingNotificationRequests(withIdentifiers: [Self.wochenberichtID])
+    }
+
+    /// Wann die Erinnerung das naechste Mal kommt, fuer die Anzeige.
+    func naechsterWochenbericht(wochentag: Int, stunde: Int, minute: Int) -> Date? {
+        var teile = DateComponents()
+        teile.weekday = wochentag
+        teile.hour = stunde
+        teile.minute = minute
+        return Calendar.current.nextDate(after: Date(),
+                                         matching: teile,
+                                         matchingPolicy: .nextTime)
+    }
+
     private func senden(_ inhalt: UNNotificationContent, id: String) {
         guard erlaubt else { return }
         zentrale.add(UNNotificationRequest(identifier: id, content: inhalt, trigger: nil))

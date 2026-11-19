@@ -3,6 +3,7 @@ import SwiftUI
 struct Wurzelansicht: View {
     @EnvironmentObject private var zeit: Zeitdienst
     @EnvironmentObject private var einstellungen: Einstellungen
+    @EnvironmentObject private var wegweiser: Wegweiser
     @State private var auswahl: Reiter = .start
 
     enum Reiter: Hashable { case start, zeit, laden, schaden, mehr }
@@ -30,6 +31,10 @@ struct Wurzelansicht: View {
                 .tag(Reiter.mehr)
         }
         .tint(.accentColor)
+        // Tipp auf die Wochenbericht-Mitteilung fuehrt direkt dorthin
+        .onChange(of: wegweiser.zeigeWochenbericht) {
+            if wegweiser.zeigeWochenbericht { auswahl = .mehr }
+        }
         // Pausenfrage als Systemdialog, damit sie nicht zu uebersehen ist
         .alert("Pause?", isPresented: .init(
             get: { zeit.pausenfrageOffen != nil },
@@ -47,9 +52,21 @@ struct Wurzelansicht: View {
 
 /// Reiter "Mehr": Notizen, Fehlerbuch, Bewegung, Einstellungen
 struct Mehransicht: View {
+    @EnvironmentObject private var wegweiser: Wegweiser
+    @EnvironmentObject private var e: Einstellungen
+
     var body: some View {
         NavigationStack {
             List {
+                Section {
+                    NavigationLink {
+                        Wochenberichtansicht()
+                    } label: {
+                        Zeile(symbol: "envelope.fill", farbe: .blue,
+                              titel: "Wochenbericht",
+                              wert: e.wochenberichtAktiv ? nil : "aus")
+                    }
+                }
                 Section {
                     NavigationLink {
                         Notizenansicht()
@@ -80,6 +97,10 @@ struct Mehransicht: View {
                 }
             }
             .navigationTitle("Mehr")
+            // Tipp auf die Mitteilung oeffnet den Bericht direkt
+            .navigationDestination(isPresented: $wegweiser.zeigeWochenbericht) {
+                Wochenberichtansicht()
+            }
         }
     }
 }

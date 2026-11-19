@@ -70,6 +70,43 @@ final class Einstellungen: ObservableObject {
                          doppelstock: doppelstock)
     }
 
+    // MARK: Arbeitsmail
+
+    @Published var arbeitsmail: String {
+        didSet { d.set(arbeitsmail, forKey: "arbeitsmail") }
+    }
+    /// Name unter der Mail
+    @Published var absenderzeile: String {
+        didSet { d.set(absenderzeile, forKey: "absenderzeile") }
+    }
+    /// Nach jedem Schadensfoto gleich den Mailentwurf oeffnen
+    @Published var mailNachSchaden: Bool {
+        didSet { d.set(mailNachSchaden, forKey: "mailNachSchaden") }
+    }
+    @Published var wochenberichtAktiv: Bool {
+        didSet { d.set(wochenberichtAktiv, forKey: "wochenberichtAktiv") }
+    }
+    /// 1 = Sonntag, 2 = Montag ... 6 = Freitag
+    @Published var wochenberichtTag: Int {
+        didSet { d.set(wochenberichtTag, forKey: "wochenberichtTag") }
+    }
+    @Published var wochenberichtStunde: Int {
+        didSet { d.set(wochenberichtStunde, forKey: "wochenberichtStunde") }
+    }
+    @Published var wochenberichtMinute: Int {
+        didSet { d.set(wochenberichtMinute, forKey: "wochenberichtMinute") }
+    }
+
+    var mailGesetzt: Bool {
+        let m = arbeitsmail.trimmingCharacters(in: .whitespaces)
+        return m.contains("@") && m.contains(".") && !m.hasPrefix("@")
+    }
+
+    static let wochentage: [(Int, String)] = [
+        (2, "Montag"), (3, "Dienstag"), (4, "Mittwoch"), (5, "Donnerstag"),
+        (6, "Freitag"), (7, "Samstag"), (1, "Sonntag")
+    ]
+
     // MARK: Fehlerbuch
 
     @Published var fehlerKategorien: [String] {
@@ -105,6 +142,15 @@ final class Einstellungen: ObservableObject {
         kofferAnzahl = d.object(forKey: "kofferAnzahl") as? Int ?? 2
         bodenPlaetzeProKoffer = d.object(forKey: "bodenPlaetzeProKoffer") as? Int ?? 18
         doppelstock = d.object(forKey: "doppelstock") as? Bool ?? true
+
+        arbeitsmail = d.string(forKey: "arbeitsmail") ?? ""
+        absenderzeile = d.string(forKey: "absenderzeile") ?? "Enrique Diaz, Versandleiter"
+        mailNachSchaden = d.object(forKey: "mailNachSchaden") as? Bool ?? false
+        wochenberichtAktiv = d.object(forKey: "wochenberichtAktiv") as? Bool ?? false
+        // Freitag 13:00: nach dem kurzen Freitag, Woche ist vollstaendig
+        wochenberichtTag = d.object(forKey: "wochenberichtTag") as? Int ?? 6
+        wochenberichtStunde = d.object(forKey: "wochenberichtStunde") as? Int ?? 13
+        wochenberichtMinute = d.object(forKey: "wochenberichtMinute") as? Int ?? 0
 
         fehlerKategorien = d.stringArray(forKey: "fehlerKategorien")
             ?? Einstellungen.standardKategorien
