@@ -12,8 +12,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Xcode auswählen
-        run: sudo xcode-select -s /Applications/Xcode_16.app
+      - name: Neuestes Xcode wählen
+        run: |
+          # Keine feste Version festnageln: GitHub tauscht die Runner-Images
+          # regelmäßig aus, und ein hartes Xcode_16.app lässt den Bau
+          # scheitern, sobald dort 16.2 oder 26 liegt.
+          NEUSTES=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$NEUSTES" ]; then
+            echo "Nehme $NEUSTES"
+            sudo xcode-select -s "$NEUSTES"
+          else
+            echo "Kein Xcode gefunden, nutze die Voreinstellung"
+          fi
+          xcodebuild -version
 
       - name: XcodeGen installieren
         run: brew install xcodegen
@@ -35,24 +46,16 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGN_ENTITLEMENTS="" \
-            clean build | xcpretty || \
-          xcodebuild \
-            -project IVT.xcodeproj \
-            -scheme IVT \
-            -configuration Release \
-            -sdk iphoneos \
-            -derivedDataPath build \
-            -destination 'generic/platform=iOS' \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGN_ENTITLEMENTS="" \
             clean build
 
       - name: IPA packen
         run: |
           APP="build/Build/Products/Release-iphoneos/IVT.app"
-          test -d "$APP" || { echo "IVT.app nicht gefunden"; ls -R build/Build/Products; exit 1; }
+          if [ ! -d "$APP" ]; then
+            echo "IVT.app nicht gefunden. Was liegt da:"
+            find build/Build/Products -maxdepth 2 -name "*.app" || true
+            exit 1
+          fi
           mkdir -p Payload
           cp -R "$APP" Payload/
           zip -qry IVT.ipa Payload
@@ -67,12 +70,13 @@ jobs:
           if-no-files-found: error
 
       - name: Release anlegen
-        if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: bau-${{ github.run_number }}
           name: IVT Bau ${{ github.run_number }}
           files: IVT.ipa
-          generate_release_notes: false
+          body: |
+            Unsignierte IPA für SideStore.
+            Gebaut aus Commit ${{ github.sha }}.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
