@@ -1,4 +1,4 @@
-# IVT — IEB-Versand-Team
+# IVT — Versand-Team
 
 Native iPhone-App für Enriques Arbeit als Versandleiter bei IEB Brilon.
 SwiftUI, SwiftData, keine Fremdbibliotheken. **Alle Daten bleiben auf dem
