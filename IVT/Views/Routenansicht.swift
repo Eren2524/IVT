@@ -3,8 +3,8 @@ import SwiftData
 import MapKit
 import CoreLocation
 
-/// Die Route einer Schicht: Schritte, Karte, und Infopunkte da,
-/// wo etwas auffällig war. Keine Tempostufen.
+/// Schritte und die Route. Mehr nicht.
+/// Stillstand wird nicht aufgezeichnet, die Linie reißt dort einfach ab.
 struct Routenansicht: View {
     var schicht: Schicht
     /// Schrittzahl, bei laufender Schicht vom Bewegungsdienst durchgereicht
@@ -12,7 +12,6 @@ struct Routenansicht: View {
 
     @State private var bild = Wegbild()
     @State private var reglerZeit: Date = .distantPast
-    @State private var gewaehlt: Auffaelligkeit?
     @State private var kamera: MapCameraPosition = .automatic
     @State private var folgtRegler = false
 
@@ -24,7 +23,7 @@ struct Routenansicht: View {
                 regler(von: von, bis: bis)
             }
 
-            liste
+            zahlen
         }
         .navigationTitle("Route")
         .navigationBarTitleDisplayMode(.inline)
@@ -36,37 +35,22 @@ struct Routenansicht: View {
     private var karte: some View {
         Map(position: $kamera) {
             ForEach(bild.abschnitte) { a in
-                if a.koordinaten.count > 1 {
-                    if a.gangart == .luecke {
-                        // Gestrichelt: hier ist nichts bekannt. Eine
-                        // durchgezogene Linie wäre eine Behauptung.
-                        MapPolyline(coordinates: a.koordinaten)
-                            .stroke(.secondary.opacity(0.4),
-                                    style: StrokeStyle(lineWidth: 3, dash: [5, 7]))
-                    } else {
-                        MapPolyline(coordinates: a.koordinaten)
-                            .stroke(.accentColor,
-                                    style: StrokeStyle(lineWidth: 5.5,
-                                                       lineCap: .round, lineJoin: .round))
-                    }
-                }
+                MapPolyline(coordinates: a.koordinaten)
+                    .stroke(.accentColor,
+                            style: StrokeStyle(lineWidth: 5.5,
+                                               lineCap: .round, lineJoin: .round))
             }
 
-            ForEach(bild.auffaelligkeiten) { p in
-                Annotation(p.titel, coordinate: p.ort) {
-                    Button {
-                        waehle(p)
-                    } label: {
-                        Image(systemName: p.art.symbol)
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .frame(width: 28, height: 28)
-                            .background(punktfarbe(p.art), in: Circle())
-                            .overlay(Circle().stroke(.white, lineWidth: gewaehlt?.id == p.id ? 3 : 1.5))
-                            .shadow(radius: 2, y: 1)
-                            .scaleEffect(gewaehlt?.id == p.id ? 1.25 : 1)
-                            .animation(.bouncy, value: gewaehlt?.id)
-                    }
+            if let erster = bild.abschnitte.first?.koordinaten.first {
+                Annotation("Start", coordinate: erster) {
+                    punkt(.green, "play.fill")
+                }
+                .annotationTitles(.hidden)
+            }
+            if let letzter = bild.abschnitte.last?.koordinaten.last,
+               bild.abschnitte.count > 1 || bild.abschnitte.first?.koordinaten.count ?? 0 > 2 {
+                Annotation("Zuletzt", coordinate: letzter) {
+                    punkt(.red, "stop.fill")
                 }
                 .annotationTitles(.hidden)
             }
@@ -78,6 +62,7 @@ struct Routenansicht: View {
                         Circle().fill(.accentColor).frame(width: 13, height: 13)
                     }
                     .shadow(radius: 3)
+                    .opacity(bild.istPause(reglerZeit) ? 0.45 : 1)
                 }
                 .annotationTitles(.hidden)
             }
@@ -88,10 +73,20 @@ struct Routenansicht: View {
                 ContentUnavailableView(
                     "Keine Route",
                     systemImage: "map",
-                    description: Text("Für diese Schicht wurden keine brauchbaren Standorte aufgezeichnet. In der Halle ist das normal — die Schritte zählt das iPhone trotzdem weiter."))
+                    description: Text("Für diese Schicht wurde draußen nichts aufgezeichnet. In der Halle ist das normal — die Schritte zählt das iPhone trotzdem weiter."))
                     .background(.background)
             }
         }
+    }
+
+    private func punkt(_ farbe: Color, _ symbol: String) -> some View {
+        Image(systemName: symbol)
+            .font(.system(size: 11, weight: .bold))
+            .foregroundStyle(.white)
+            .frame(width: 22, height: 22)
+            .background(farbe, in: Circle())
+            .overlay(Circle().stroke(.white, lineWidth: 1.5))
+            .shadow(radius: 2, y: 1)
     }
 
     // MARK: Regler
@@ -101,9 +96,15 @@ struct Routenansicht: View {
             HStack {
                 Text(von.uhrzeit)
                 Spacer()
-                Text(reglerZeit.uhrzeit)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(folgtRegler ? .primary : .secondary)
+                HStack(spacing: 5) {
+                    Text(reglerZeit.uhrzeit)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(folgtRegler ? .primary : .secondary)
+                    if folgtRegler, bild.istPause(reglerZeit) {
+                        Text("· nicht aufgezeichnet")
+                            .font(.caption)
+                    }
+                }
                 Spacer()
                 Text(bis.uhrzeit)
             }
@@ -116,7 +117,6 @@ struct Routenansicht: View {
                 set: { neu in
                     reglerZeit = von.addingTimeInterval(neu)
                     folgtRegler = true
-                    gewaehlt = nil
                 }
             ), in: 0...bis.timeIntervalSince(von))
         }
@@ -126,9 +126,9 @@ struct Routenansicht: View {
         .background(.bar)
     }
 
-    // MARK: Liste
+    // MARK: Zahlen
 
-    private var liste: some View {
+    private var zahlen: some View {
         List {
             Section {
                 HStack(spacing: 0) {
@@ -136,53 +136,16 @@ struct Routenansicht: View {
                              beschriftung: "Schritte", symbol: "shoeprints.fill")
                     Kennzahl(wert: String(format: "%.2f km", bild.gesamtMeter / 1000),
                              beschriftung: "Draußen", symbol: "map")
-                    Kennzahl(wert: Wegauswertung.minuten(bild.standzeit),
-                             beschriftung: "Gestanden", symbol: "pause")
+                    Kennzahl(wert: Wegauswertung.minuten(bild.unterwegs),
+                             beschriftung: "Unterwegs", symbol: "figure.walk")
                 }
                 .padding(.vertical, 2)
             } footer: {
-                Text("Die Strecke zählt nur, was draußen aufgezeichnet wurde. Schritte zählt das iPhone auch in der Halle weiter.")
-            }
-
-            if !bild.auffaelligkeiten.isEmpty {
-                Section {
-                    ForEach(bild.auffaelligkeiten) { p in
-                        Button { waehle(p) } label: {
-                            HStack(spacing: 12) {
-                                Image(systemName: p.art.symbol)
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundStyle(.white)
-                                    .frame(width: 28, height: 28)
-                                    .background(punktfarbe(p.art),
-                                                in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(p.titel).font(.subheadline.weight(.medium))
-                                    Text(p.text)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
-                                Spacer(minLength: 6)
-                                Text(p.zeit.uhrzeit)
-                                    .font(.caption)
-                                    .foregroundStyle(.tertiary)
-                                    .monospacedDigit()
-                            }
-                            .padding(.vertical, 2)
-                        }
-                        .buttonStyle(.plain)
-                        .listRowBackground(gewaehlt?.id == p.id
-                                           ? Color.accentColor.opacity(0.12) : nil)
-                    }
-                } header: {
-                    Text("Auffälligkeiten")
-                } footer: {
-                    Text("Automatisch erkannt: längere Halte, Orte mit mehreren Besuchen und Abschnitte ohne Signal. Antippen zeigt die Stelle auf der Karte.")
-                }
+                Text("Aufgezeichnet wird nur, solange du dich bewegst. Stehst du, pausiert die Karte und die Linie reißt ab. Schritte zählt das iPhone auch in der Halle weiter — die kommen nicht aus GPS.")
             }
         }
         .listStyle(.insetGrouped)
-        .frame(height: 290)
+        .frame(height: 185)
     }
 
     // MARK: Hilfen
@@ -196,26 +159,5 @@ struct Routenansicht: View {
     private func laden() {
         bild = Wegauswertung.auswerten(schicht.wegpunkte)
         reglerZeit = bild.von ?? schicht.start
-    }
-
-    private func waehle(_ p: Auffaelligkeit) {
-        gewaehlt = p
-        reglerZeit = p.zeit
-        folgtRegler = false
-        withAnimation {
-            kamera = .region(MKCoordinateRegion(
-                center: p.ort,
-                latitudinalMeters: 140, longitudinalMeters: 140))
-        }
-    }
-
-    private func punktfarbe(_ a: Auffaelligkeit.Art) -> Color {
-        switch a {
-        case .start:      return .green
-        case .ende:       return .red
-        case .halt:       return .orange
-        case .aufenthalt: return .indigo
-        case .luecke:     return .gray
-        }
     }
 }

@@ -579,12 +579,12 @@ input,select{font:inherit;color:inherit}
     <h3>Route</h3>
     <div class="liste">
       <button class="z" onclick="unter('route')">
-        <span class="sym" style="background:var(--indigo)">〰</span>Route und Auffälligkeiten
+        <span class="sym" style="background:var(--indigo)">〰</span>Route auf der Karte
         <span class="wert" id="bw-punkte">—</span>
         <svg class="pfeil" viewBox="0 0 8 14"><path d="M1 1l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></button>
     </div>
-    <p class="fuss">Die Karte setzt Infopunkte, wo du länger standest, immer wieder
-      hinkamst oder kein Signal hattest.</p>
+    <p class="fuss">Aufgezeichnet wird nur, solange du dich bewegst. Stehst du,
+      pausiert die Karte.</p>
   </div>
 
   <div class="gruppe">
@@ -712,7 +712,7 @@ input,select{font:inherit;color:inherit}
     <div class="reglerkopf">
       <span id="r-von">—</span>
       <span style="flex:1;text-align:center">
-        <b id="r-jetzt">—</b>
+        <b id="r-jetzt">—</b> <span id="r-pause" style="font-size:11px"></span>
       </span>
       <span id="r-bis">—</span>
     </div>
@@ -724,20 +724,11 @@ input,select{font:inherit;color:inherit}
       <div class="z" style="padding:14px 16px"><div class="kz" style="width:100%">
         <div><div class="l">Schritte</div><div class="v">6.412</div></div>
         <div><div class="l">Draußen</div><div class="v" id="r-strecke">—</div></div>
-        <div><div class="l">Gestanden</div><div class="v" id="r-stand">—</div></div>
+        <div><div class="l">Unterwegs</div><div class="v" id="r-unterwegs">—</div></div>
       </div></div>
-      <div class="z">Ohne Signal<span class="wert" id="r-luecke">—</span></div>
     </div>
   </div>
 
-  <div class="gruppe">
-    <h3>Auffälligkeiten</h3>
-    <div class="liste" id="r-liste"></div>
-    <p class="fuss">Automatisch erkannt: längere Halte, Orte mit mehreren Besuchen und
-      Abschnitte ohne Signal. Antippen zeigt die Stelle auf der Karte.<br><br>
-      Die Strecke zählt nur, was draußen aufgezeichnet wurde. Schritte zählt das
-      iPhone auch in der Halle weiter.</p>
-  </div>
 </div>
 
 <!-- ============ MAIL ============ -->
@@ -1259,13 +1250,12 @@ function mailWoche(){
 }
 
 
-/* ======================= Routenverlauf ======================= */
-/* Derselbe Klassifizierer wie Wegauswertung.swift, gefüttert mit einem
-   synthetischen Schichttag. 1 Karteneinheit = 1,1 m. */
+/* ======================= Route ======================= */
+/* Dieselbe Logik wie Wegauswertung.swift: aufgezeichnet wird nur
+   Bewegung. Steht er, kommt gar kein Punkt an und die Linie reißt ab.
+   1 Karteneinheit = 1,1 m. */
 const EINHEIT = 1.1;
-const G_HALT = 0.3, G_UNSINN = 8.0;
-const LUECKE_AB = 300, HALT_AB = 480, ZELLE = 30;
-const LUECKE_INFO_AB = 600, MAX_INFO = 14, BESUCH_PAUSE = 120;
+const RISS_AB = 180, G_UNSINN = 8.0;
 
 const ORTE = {
   tor:[40,208], hof:[145,196], rampeEin:[208,162],
@@ -1273,21 +1263,19 @@ const ORTE = {
   buero:[150,44], pause:[70,62]
 };
 
-/* [minute, x, y] – null statt Koordinaten heißt: hier kam nichts an */
+/* [minute, x, y] – steh() erzeugt bewusst keine Punkte */
 function schichtBauen(){
   const w = [];
   let t = 0;
-  const geh = (ziel, minuten) => { t += minuten; w.push([t, ...ziel]); };
-  // Gehzeiten sind bewusst gemächlich: im Hof wird getragen, nicht gejoggt.
-  const steh = (minuten) => { const l = w[w.length-1]; t += minuten; w.push([t, l[1], l[2]]); };
-  const luecke = (minuten) => { t += minuten; w.push([t, null, null]); };
+  const geh  = (ziel, min) => { t += min; w.push([t, ...ziel, true]); };
+  const steh = (min) => { const l = w[w.length-1]; t += min; w.push([t, l[1], l[2], false]); };
+  const luecke = (min) => { t += min; w.push([t, null, null, false]); };
 
-  w.push([0, ...ORTE.tor]);
+  w.push([0, ...ORTE.tor, true]);
   geh(ORTE.hof, 1.8);  steh(7);
   geh(ORTE.rampeEin, 1); luecke(16);
 
-  // Vormittag: fünf Runden zwischen Stapelplatz und Rampe
-  w.push([t, ...ORTE.stapel]);
+  w.push([t, ...ORTE.stapel, true]);
   const runden = (n, stehA, stehB) => {
     for(let i=0;i<n;i++){
       geh(ORTE.rampeA, 1.8); steh(stehA);
@@ -1295,45 +1283,37 @@ function schichtBauen(){
     }
   };
   runden(5, 11, 5);
-
-  luecke(60);                               // in der Halle
-  w.push([t, ...ORTE.pause]); steh(10);     // Frühstück 9:30–9:40
+  luecke(60);
+  w.push([t, ...ORTE.pause, true]); steh(10);
   luecke(80);
-
-  w.push([t, ...ORTE.stapel]);
+  w.push([t, ...ORTE.stapel, true]);
   runden(4, 10, 5);
-  geh(ORTE.buero, 1.1);                     // zügig
-  steh(6);
-
-  luecke(30);                               // Mittag 12:30–13:00
-  w.push([t, ...ORTE.stapel]);
+  geh(ORTE.buero, 1.1); steh(6);
+  luecke(30);
+  w.push([t, ...ORTE.stapel, true]);
   runden(2, 10, 5);
-  geh(ORTE.rampeB, 1.2);                    // zügig
-  steh(7);
+  geh(ORTE.rampeB, 1.2); steh(7);
   luecke(10);
-  w.push([t, ...ORTE.pause]);
+  w.push([t, ...ORTE.pause, true]);
   geh(ORTE.tor, 1.6); steh(3);
   return w;
 }
 
-/* Stützpunkte zu einer Punktwolke auflösen, alle 20 Sekunden einer */
+/* Nur Bewegungsstrecken auflösen, alle 20 Sekunden ein Punkt */
 function punkteBauen(){
   const w = schichtBauen();
-  const start = 6*60 + 28;                 // 6:28
+  const start = 6*60 + 28;
   const pk = [];
   for(let i=1;i<w.length;i++){
-    const [t0,x0,y0] = w[i-1], [t1,x1,y1] = w[i];
-    if(x1 === null || x0 === null) continue;      // Lücke: nichts erzeugen
+    const [t0,x0,y0] = w[i-1], [t1,x1,y1,bewegt] = w[i];
+    if(!bewegt || x1 === null || x0 === null) continue;   // Stehen und Lücken: nichts
     const dauer = (t1 - t0) * 60;
     const n = Math.max(1, Math.round(dauer / 20));
     for(let k=0;k<=n;k++){
       const f = k/n;
-      const jitter = (x0===x1 && y0===y1) ? 1.4 : 0.5;
-      pk.push({
-        min: start + t0 + (t1-t0)*f,
-        x: x0 + (x1-x0)*f + (Math.random()-.5)*jitter,
-        y: y0 + (y1-y0)*f + (Math.random()-.5)*jitter
-      });
+      pk.push({min: start + t0 + (t1-t0)*f,
+               x: x0 + (x1-x0)*f + (Math.random()-.5)*0.5,
+               y: y0 + (y1-y0)*f + (Math.random()-.5)*0.5});
     }
   }
   return pk.sort((a,b) => a.min - b.min);
@@ -1346,116 +1326,38 @@ function uhr(min){
 function minText(sek){
   const m = Math.round(sek/60);
   if(m >= 60) return Math.floor(m/60) + ":" + String(m%60).padStart(2,"0") + " h";
-  return Math.max(1,m) + " min";
+  return Math.max(0,m) + " min";
 }
 
 function auswerten(pk){
-  const st = [];
+  const ab = [];
+  let lauf = null;
+  const schliessen = () => {
+    if(lauf && lauf.ko.length > 1) ab.push(lauf);
+    lauf = null;
+  };
   for(let i=1;i<pk.length;i++){
     const p = pk[i-1], q = pk[i];
     const dt = (q.min - p.min) * 60;
     if(dt <= 0) continue;
     const m = Math.hypot(q.x-p.x, q.y-p.y) * EINHEIT;
-    const v = m/dt;
-    let art;
-    if(dt >= LUECKE_AB || v > G_UNSINN) art = "luecke";
-    else if(v < G_HALT) art = "halt";
-    else                art = "bewegt";
-    st.push({von:p.min, bis:q.min, a:[p.x,p.y], b:[q.x,q.y],
-             m: art === "luecke" ? 0 : m, art});
+    // Zu lange nichts gehört oder ein unmöglicher Sprung: Linie reißt ab
+    if(dt >= RISS_AB || m/dt > G_UNSINN){ schliessen(); continue; }
+    if(!lauf) lauf = {von:p.min, bis:q.min, ko:[[p.x,p.y],[q.x,q.y]], m};
+    else { lauf.bis = q.min; lauf.ko.push([q.x,q.y]); lauf.m += m; }
   }
-  // gleiche Gangart zusammenfassen
-  let ab = [];
-  for(const x of st){
-    const l = ab[ab.length-1];
-    if(l && l.art === x.art){ l.bis = x.bis; l.m += x.m; l.ko.push(x.b); }
-    else ab.push({von:x.von, bis:x.bis, ko:[x.a, x.b], m:x.m, art:x.art});
-  }
-  // Schnipsel unter 30 s im Nachbarn aufgehen lassen
-  const glatt = [];
-  for(const x of ab){
-    const d = (x.bis - x.von) * 60;
-    const l = glatt[glatt.length-1];
-    if(x.art !== "luecke" && d < 30 && l && l.art !== "luecke"){
-      l.bis = x.bis; l.m += x.m; l.ko.push(...x.ko.slice(1));
-    } else glatt.push(x);
-  }
-  ab = glatt;
+  schliessen();
 
-  let meter = 0, geh = 0, stand = 0, luecken = 0;
-  for(const x of ab){
-    const d = (x.bis - x.von) * 60;
-    meter += x.m;
-    if(x.art === "halt") stand += d;
-    else if(x.art === "luecke") luecken += d;
-    else geh += d;
-  }
+  let meter = 0, unterwegs = 0;
+  for(const a of ab){ meter += a.m; unterwegs += (a.bis - a.von) * 60; }
 
-  // Infopunkte
-  const inf = [];
-  const mitte = x => x.ko[Math.floor(x.ko.length/2)];
-  if(ab.length) inf.push({art:"start", min:ab[0].von, ort:ab[0].ko[0],
-    titel:"Losgegangen", text:`Erster Punkt um ${uhr(ab[0].von)}.`});
-  for(const x of ab){
-    const d = (x.bis - x.von) * 60;
-    if(x.art === "halt" && d >= HALT_AB)
-      inf.push({art:"halt", min:x.von, dauer:d, ort:mitte(x), titel:`${minText(d)} gestanden`,
-        text:`Von ${uhr(x.von)} bis ${uhr(x.bis)} kaum bewegt.`});
-    else if(x.art === "luecke" && d >= LUECKE_INFO_AB)
-      inf.push({art:"luecke", min:x.von, dauer:d, ort:mitte(x), titel:`${minText(d)} kein Signal`,
-        text:`Zwischen ${uhr(x.von)} und ${uhr(x.bis)} kam nichts an — vermutlich in der Halle.`});
-  }
-  // Aufenthaltsorte: Raster von 30 m
-  const zellen = {};
-  for(let i=1;i<pk.length;i++){
-    const p = pk[i-1], q = pk[i];
-    const dt = (q.min - p.min)*60;
-    if(dt <= 0 || dt >= LUECKE_AB) continue;
-    const k = Math.round(p.x*EINHEIT/ZELLE) + "|" + Math.round(p.y*EINHEIT/ZELLE);
-    const z = zellen[k] || (zellen[k] =
-      {zeit:0, besuche:0, sx:0, sy:0, n:0, erste:p.min, zuletzt:null});
-    z.zeit += dt; z.sx += p.x; z.sy += p.y; z.n++;
-    // Neuer Besuch nur nach echter Abwesenheit, sonst zählt jedes Zittern
-    // an der Zellengrenze als Rückkehr.
-    if(z.zuletzt === null) z.besuche = 1;
-    else if((p.min - z.zuletzt)*60 >= BESUCH_PAUSE) z.besuche++;
-    z.zuletzt = p.min;
-  }
-  Object.values(zellen)
-    .filter(z => z.zeit >= 15*60 && z.besuche >= 3)
-    .sort((a,b) => b.zeit - a.zeit).slice(0,2)
-    .forEach(z => inf.push({art:"aufenthalt", min:z.erste, dauer:z.zeit, ort:[z.sx/z.n, z.sy/z.n],
-      titel:"Oft hier gewesen",
-      text:`${z.besuche}× zurückgekommen, zusammen ${minText(z.zeit)}.`}));
-
-  if(ab.length){
-    const l = ab[ab.length-1];
-    inf.push({art:"ende", min:l.bis, ort:l.ko[l.ko.length-1], titel:"Letzter Punkt",
-      text:`Um ${uhr(l.bis)} aufgehört aufzuzeichnen.`});
-  }
-  // Start und Ende bleiben immer, vom Rest überlebt das Auffälligste
-  let gezeigt = inf;
-  if(inf.length > MAX_INFO){
-    const fest = inf.filter(p => p.art === "start" || p.art === "ende");
-    const gew = p => ({aufenthalt:100000, luecke:50000, halt:0}[p.art] || 0)
-                     + (p.dauer || 0);
-    gezeigt = fest.concat(
-      inf.filter(p => p.art !== "start" && p.art !== "ende")
-         .sort((a,b) => gew(b) - gew(a))
-         .slice(0, Math.max(0, MAX_INFO - fest.length)));
-  }
-  gezeigt.sort((a,b) => a.min - b.min);
-
-  return {ab, inf: gezeigt, meter, geh, stand, luecken,
-          von: ab.length ? ab[0].von : 0, bis: ab.length ? ab[ab.length-1].bis : 0};
+  return {ab, meter, unterwegs,
+          von: ab.length ? ab[0].von : 0,
+          bis: ab.length ? ab[ab.length-1].bis : 0};
 }
 
-const WEGFARBE = "#007AFF", LUECKEFARBE = "#8E8E93";
-const IFARBE = {start:"#34C759", ende:"#FF3B30", halt:"#FF9500",
-                aufenthalt:"#5856D6", luecke:"#8E8E93"};
-const ISYM = {start:"▶", ende:"■", halt:"⏸", aufenthalt:"📍", luecke:"⃠"};
-
-let R = null, rGewaehlt = -1;
+const WEGFARBE = "#007AFF";
+let R = null;
 
 function routePosition(min){
   if(!R || !R.ab.length) return null;
@@ -1464,7 +1366,6 @@ function routePosition(min){
   if(min >= R.bis) return l.ko[l.ko.length-1];
   for(const a of R.ab){
     if(min >= a.von && min <= a.bis){
-      if(a.ko.length < 2) return a.ko[0];
       const f = (min - a.von)/(a.bis - a.von) * (a.ko.length - 1);
       const i = Math.min(a.ko.length-2, Math.max(0, Math.floor(f)));
       const r = f - i, p = a.ko[i], q = a.ko[i+1];
@@ -1475,10 +1376,13 @@ function routePosition(min){
   for(const a of R.ab) if(a.bis <= min) letzter = a;
   return letzter ? letzter.ko[letzter.ko.length-1] : null;
 }
+function istPause(min){
+  if(!R || !R.ab.length || min <= R.von || min >= R.bis) return false;
+  return !R.ab.some(a => min >= a.von && min <= a.bis);
+}
 
 function routeKarteZeichnen(jetzt){
   const kulisse = `
-    <rect width="340" height="240" fill="transparent"/>
     <rect x="95" y="130" width="130" height="86" rx="4" fill="var(--fill2)"/>
     <text x="160" y="178" text-anchor="middle" font-size="10" fill="var(--text3)"
       font-family="system-ui">Halle</text>
@@ -1492,30 +1396,29 @@ function routeKarteZeichnen(jetzt){
     <text x="40" y="226" text-anchor="middle" font-size="9" fill="var(--text3)"
       font-family="system-ui">Tor</text>`;
 
-  const wege = R.ab.filter(a => a.ko.length > 1).map(a => {
-    const d = "M" + a.ko.map(k => `${k[0].toFixed(1)} ${k[1].toFixed(1)}`).join(" L");
-    return a.art === "luecke"
-      ? `<path d="${d}" stroke="${LUECKEFARBE}" stroke-width="2" fill="none"
-           stroke-dasharray="4 6" opacity=".55"/>`
-      : `<path d="${d}" stroke="${WEGFARBE}" stroke-width="4.5" fill="none"
-           stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>`;
-  }).join("");
+  const wege = R.ab.map(a =>
+    `<path d="M${a.ko.map(k => `${k[0].toFixed(1)} ${k[1].toFixed(1)}`).join(" L")}"
+       stroke="${WEGFARBE}" stroke-width="4.5" fill="none"
+       stroke-linecap="round" stroke-linejoin="round" opacity=".92"/>`).join("");
 
-  const punkte = R.inf.map((p,i) => `
-    <g onclick="routeWaehle(${i})" style="cursor:pointer">
-      <circle cx="${p.ort[0].toFixed(1)}" cy="${p.ort[1].toFixed(1)}"
-        r="${i === rGewaehlt ? 12 : 9}" fill="${IFARBE[p.art]}"
-        stroke="#fff" stroke-width="${i === rGewaehlt ? 3 : 1.8}"/>
-      <text x="${p.ort[0].toFixed(1)}" y="${(p.ort[1]+3.4).toFixed(1)}" text-anchor="middle"
-        font-size="9" fill="#fff" style="pointer-events:none">${ISYM[p.art]}</text>
-    </g>`).join("");
+  const erster = R.ab.length ? R.ab[0].ko[0] : null;
+  const letzter = R.ab.length ? R.ab[R.ab.length-1].ko.slice(-1)[0] : null;
+  const marker = (o,f,sym) => o ? `
+    <circle cx="${o[0].toFixed(1)}" cy="${o[1].toFixed(1)}" r="8" fill="${f}"
+      stroke="#fff" stroke-width="1.6"/>
+    <text x="${o[0].toFixed(1)}" y="${(o[1]+3).toFixed(1)}" text-anchor="middle"
+      font-size="8" fill="#fff">${sym}</text>` : "";
 
   const pos = routePosition(jetzt);
+  const pause = istPause(jetzt);
   const marke = pos ? `
-    <circle cx="${pos[0].toFixed(1)}" cy="${pos[1].toFixed(1)}" r="9" fill="#fff" opacity=".95"/>
-    <circle cx="${pos[0].toFixed(1)}" cy="${pos[1].toFixed(1)}" r="5.5" fill="#007AFF"/>` : "";
+    <circle cx="${pos[0].toFixed(1)}" cy="${pos[1].toFixed(1)}" r="9" fill="#fff"
+      opacity="${pause ? .5 : .95}"/>
+    <circle cx="${pos[0].toFixed(1)}" cy="${pos[1].toFixed(1)}" r="5.5" fill="#007AFF"
+      opacity="${pause ? .45 : 1}"/>` : "";
 
-  document.getElementById("rk").innerHTML = kulisse + wege + punkte + marke;
+  document.getElementById("rk").innerHTML =
+    kulisse + wege + marker(erster,"#34C759","▶") + marker(letzter,"#FF3B30","■") + marke;
 }
 
 function routeZeichnen(){
@@ -1528,25 +1431,10 @@ function routeZeichnen(){
   document.getElementById("r-von").textContent = uhr(R.von);
   document.getElementById("r-bis").textContent = uhr(R.bis);
   document.getElementById("r-strecke").textContent = (R.meter/1000).toFixed(2) + " km";
-
-  document.getElementById("r-stand").textContent = minText(R.stand);
-
-  document.getElementById("r-luecke").textContent = minText(R.luecken);
-  document.getElementById("bw-punkte").textContent = R.inf.length + " Punkte";
-
-  document.getElementById("r-liste").innerHTML = R.inf.map((p,i) =>
-    `<button class="ip ${i === rGewaehlt ? 'an' : ''}" onclick="routeWaehle(${i})">
-       <span class="s" style="background:${IFARBE[p.art]}">${ISYM[p.art]}</span>
-       <span style="flex:1;min-width:0">
-         <span class="t" style="display:block">${p.titel}</span>
-         <span class="u" style="display:block">${p.text}</span>
-       </span>
-       <span class="z2">${uhr(p.min)}</span>
-     </button>`).join("");
+  document.getElementById("r-unterwegs").textContent = minText(R.unterwegs);
 
   reglerBewegt();
 
-  // Dashboard und Bewegungsseite sollen dieselbe Zahl zeigen wie die Karte
   const km = (R.meter/1000).toFixed(1).replace(".", ",") + " km";
   document.querySelectorAll("[data-strecke]").forEach(el => el.textContent = km);
 }
@@ -1554,16 +1442,8 @@ function routeZeichnen(){
 function reglerBewegt(){
   const jetzt = +document.getElementById("r-schieber").value;
   document.getElementById("r-jetzt").textContent = uhr(jetzt);
+  document.getElementById("r-pause").textContent = istPause(jetzt) ? "· nicht aufgezeichnet" : "";
   routeKarteZeichnen(jetzt);
-}
-
-function routeWaehle(i){
-  rGewaehlt = i;
-  const p = R.inf[i];
-  document.getElementById("r-schieber").value = p.min;
-  routeZeichnen();
-  const el = document.querySelectorAll("#r-liste .ip")[i];
-  if(el) el.scrollIntoView({block:"nearest", behavior:"smooth"});
 }
 
 /* ======================= Fehlerbalken ======================= */

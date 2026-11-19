@@ -58,13 +58,13 @@ struct Bewegungsansicht: View {
                     } label: {
                         Zeile(symbol: "point.topleft.down.to.point.bottomright.curvepath",
                               farbe: .indigo,
-                              titel: "Route und Auffälligkeiten",
+                              titel: "Route auf der Karte",
                               wert: auffaellig(s))
                     }
                 } header: {
                     Text("Route")
                 } footer: {
-                    Text("Die Karte setzt Infopunkte, wo du länger standest, immer wieder hinkamst oder kein Signal hattest.")
+                    Text("Aufgezeichnet wird nur, solange du dich bewegst. Stehst du, pausiert die Karte.")
                 }
             }
 
@@ -123,10 +123,10 @@ struct Bewegungsansicht: View {
         "\(schicht?.wegpunkte.count ?? 0)"
     }
 
-    /// Kurzform für die Zeile: wie viele Infopunkte es gibt.
+    /// Kurzform für die Zeile: wie weit er draußen gekommen ist.
     private func auffaellig(_ s: Schicht) -> String? {
-        let n = Wegauswertung.auswerten(s.wegpunkte).auffaelligkeiten.count
-        return n == 0 ? nil : "\(n) Punkte"
+        let m = Wegauswertung.auswerten(s.wegpunkte).gesamtMeter
+        return m < 50 ? nil : String(format: "%.1f km", m / 1000)
     }
 
     private func inKartenAppOeffnen(_ w: Wegpunkt) {

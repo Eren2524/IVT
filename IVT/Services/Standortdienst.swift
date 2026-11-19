@@ -31,7 +31,9 @@ final class Standortdienst: NSObject, ObservableObject {
         super.init()
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
-        manager.distanceFilter = 20
+        // iOS meldet erst ab dieser Strecke. Beim Stehen kommt damit
+        // gar nichts an - das ist der Punkt.
+        manager.distanceFilter = 25
         manager.allowsBackgroundLocationUpdates = true
         manager.pausesLocationUpdatesAutomatically = true
         manager.activityType = .other

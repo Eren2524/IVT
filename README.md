@@ -61,33 +61,29 @@ auch die letzte und vorletzte.
 
 ## Route
 
-`Logic/Wegauswertung.swift` zerlegt die Wegpunkte einer Schicht in Abschnitte
-und sucht darin das Erwähnenswerte. **Keine Tempostufen** — es gibt genau drei
-Zustände:
+Aufgezeichnet wird **nur Bewegung**. Der Zeitdienst legt einen Wegpunkt erst ab
+25 Metern Abstand zum letzten an, und `CLLocationManager.distanceFilter` steht
+auf denselben 25 Meter — beim Stehen kommt also gar nichts erst an. Das spart
+Akku und erspart der Karte eine Wolke aus Zitterpunkten.
 
-| Zustand | wann |
+`Logic/Wegauswertung.swift` setzt daraus Linien zusammen und **reißt sie ab**,
+wo mehr als 3 Minuten zwischen zwei Punkten liegen oder ein Sprung über 8 m/s
+auftaucht. Beides heißt: hier ist nichts bekannt. Eine durchgezogene Linie wäre
+eine Behauptung.
+
+Oben stehen drei Zahlen:
+
+| | |
 |---|---|
-| **Unterwegs** | ab 0,3 m/s |
-| **Gestanden** | darunter |
-| **Kein Signal** | über 5 Minuten ohne Punkt, oder ein Sprung über 8 m/s |
+| **Schritte** | aus dem Bewegungs-Coprozessor, zählt auch in der Halle weiter |
+| **Draußen** | nur was als Bewegung aufgezeichnet wurde |
+| **Unterwegs** | wie lange davon |
 
-**Lücken sind ehrlich.** Liegen zwischen zwei Punkten mehr als 5 Minuten, wird
-keine gerade Linie durch die Halle gezogen. Die Strecke ist gestrichelt und
-zählt null Meter. Die Schritte zählt das iPhone in der Halle trotzdem weiter —
-die kommen aus dem Bewegungs-Coprozessor, nicht aus GPS.
+Der Zeitregler fährt durch die Schicht. Fällt er in eine Lücke, wird der Punkt
+blass und daneben steht *nicht aufgezeichnet*.
 
-**Infopunkte** entstehen bei: Halten ab 8 Minuten, Signallücken ab 10 Minuten,
-und Orten, zu denen er mindestens dreimal zurückkommt und insgesamt 15 Minuten
-verbringt. Höchstens 14 Stück — Start und Ende bleiben immer, vom Rest überlebt
-das Auffälligste.
-
-Zwei Fallen, die beim Bauen zugeschnappt sind und jetzt zu sind:
-
-- Bei 3 Minuten Haltschwelle wurde **jeder Rampengang** ein Hinweis. 38 Hinweise
-  sind kein Hinweis mehr, sondern ein Protokoll. Darum 8 Minuten plus Deckel.
-- Der Besuchszähler sprang bei GPS-Zittern zwischen Nachbarzellen hin und her
-  und machte aus neun Gängen **97 Besuche**. Jetzt zählt eine Rückkehr erst
-  nach 2 Minuten echter Abwesenheit.
+Im Demo-Tag des Prototyps sind das 157 Wegpunkte statt rund 700, 27 Linien­stücke,
+3,1 km draußen in 46 Minuten — und 6:36 h, die gar nicht erst erfasst wurden.
 
 ## Arbeitszeiten (Auslieferungszustand)
 
@@ -185,7 +181,7 @@ IVT/
     Palettenrechner.swift Stellplatz-Logik des Zuges
     Routenhilfe.swift     Streckenlänge
     Wochenbericht.swift   Wochendaten zusammentragen
-    Wegauswertung.swift   Route in Abschnitte und Auffälligkeiten zerlegen
+    Wegauswertung.swift   Wegpunkte zu Linienstücken, Risse bei Pausen
   Services/
     Einstellungen.swift   Vorgaben in UserDefaults
     Standortdienst.swift  Geofence und Route (CoreLocation)
