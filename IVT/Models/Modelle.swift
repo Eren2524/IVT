@@ -284,12 +284,24 @@ final class Fehlereintrag {
 final class Ladeplan {
     var name: String
     var angelegt: Date
-    /// JSON der Positionen, damit das Modell schlank bleibt
-    var positionenJSON: String
+    var euroDoppelstock: Int
+    var euroEinzeln: Int
+    var halbDoppelstock: Int
+    var halbEinzeln: Int
 
-    init(name: String, positionenJSON: String) {
+    init(name: String, ladung: Ladung) {
         self.name = name
         self.angelegt = Date()
-        self.positionenJSON = positionenJSON
+        self.euroDoppelstock = ladung.euroDoppelstock
+        self.euroEinzeln = ladung.euroEinzeln
+        self.halbDoppelstock = ladung.halbDoppelstock
+        self.halbEinzeln = ladung.halbEinzeln
+    }
+
+    var ladung: Ladung {
+        Ladung(euroDoppelstock: euroDoppelstock,
+               euroEinzeln: euroEinzeln,
+               halbDoppelstock: halbDoppelstock,
+               halbEinzeln: halbEinzeln)
     }
 }

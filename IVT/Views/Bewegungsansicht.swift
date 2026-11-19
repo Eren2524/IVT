@@ -46,11 +46,24 @@ struct Bewegungsansicht: View {
             }
 
             if let s = schicht, !s.wegpunkte.isEmpty {
-                Section("Route") {
+                Section {
                     Routenkarte(punkte: s.wegpunkte, hervorgehoben: treffer)
-                        .frame(height: 260)
+                        .frame(height: 220)
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                         .listRowInsets(EdgeInsets())
+
+                    NavigationLink {
+                        Routenansicht(schicht: s)
+                    } label: {
+                        Zeile(symbol: "point.topleft.down.to.point.bottomright.curvepath",
+                              farbe: .indigo,
+                              titel: "Verlauf über die Zeit",
+                              wert: auffaellig(s))
+                    }
+                } header: {
+                    Text("Route")
+                } footer: {
+                    Text("Der Verlauf färbt die Strecke nach Tempo ein und setzt Infopunkte, wo du lange standest, zügig gingst oder kein Signal hattest.")
                 }
             }
 
@@ -107,6 +120,12 @@ struct Bewegungsansicht: View {
 
     private var punkte: String {
         "\(schicht?.wegpunkte.count ?? 0)"
+    }
+
+    /// Kurzform für die Zeile: wie viele Infopunkte es gibt.
+    private func auffaellig(_ s: Schicht) -> String? {
+        let n = Wegauswertung.auswerten(s.wegpunkte).auffaelligkeiten.count
+        return n == 0 ? nil : "\(n) Punkte"
     }
 
     private func inKartenAppOeffnen(_ w: Wegpunkt) {

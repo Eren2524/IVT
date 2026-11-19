@@ -31,55 +31,34 @@ struct Zugkonfiguration: Codable, Equatable {
 
 // MARK: - Eingabe
 
-enum Palettenart: String, Codable, CaseIterable, Identifiable {
-    case euro, halb
+/// Die ganze Eingabe sind vier Zahlen. Keine Bezeichnungen, keine Listen:
+/// im Hof zaehlt nur, wie viele Paletten welcher Art rausmuessen und
+/// ob etwas darauf gestellt werden darf.
+struct Ladung: Codable, Equatable {
+    var euroDoppelstock: Int = 0
+    var euroEinzeln: Int = 0
+    var halbDoppelstock: Int = 0
+    var halbEinzeln: Int = 0
 
-    var id: String { rawValue }
+    static let leer = Ladung()
 
-    var anzeige: String {
-        switch self {
-        case .euro: return "Europalette"
-        case .halb: return "Halbpalette"
-        }
-    }
-
-    var kurz: String {
-        switch self {
-        case .euro: return "Euro"
-        case .halb: return "Halb"
-        }
-    }
-
-    /// Wie viele dieser Paletten teilen sich einen Stellplatz
-    var proStellplatz: Int {
-        switch self {
-        case .euro: return 1
-        case .halb: return 2
-        }
-    }
-}
-
-struct Ladeposition: Codable, Identifiable, Equatable {
-    var id: UUID = UUID()
-    var bezeichnung: String = ""
-    var anzahl: Int = 1
-    var art: Palettenart = .euro
-    /// Darf etwas darauf gestellt werden?
-    var stapelbar: Bool = true
+    var paletten: Int { euroDoppelstock + euroEinzeln + halbDoppelstock + halbEinzeln }
+    var istLeer: Bool { paletten == 0 }
 }
 
 // MARK: - Ergebnis
 
 struct Ladeergebnis {
     var konfiguration: Zugkonfiguration
+    var ladung: Ladung
 
     /// Benoetigte Stellplaetze, nach Stapelbarkeit getrennt
-    var stellplaetzeStapelbar: Int
-    var stellplaetzeNichtStapelbar: Int
+    var stellplaetzeDoppelstock: Int
+    var stellplaetzeEinzeln: Int
 
     /// Tatsaechliche Belegung
-    var bodenStapelbar: Int
-    var bodenNichtStapelbar: Int
+    var bodenDoppelstock: Int
+    var bodenEinzeln: Int
     var obenBelegt: Int
 
     /// Stellplaetze, die nicht mehr in den Zug passen
@@ -88,30 +67,29 @@ struct Ladeergebnis {
     /// Hinweis, wenn Halbpaletten ungerade aufgehen
     var halbeReste: [String]
 
-    var benoetigt: Int { stellplaetzeStapelbar + stellplaetzeNichtStapelbar }
-    var untergebracht: Int { bodenStapelbar + bodenNichtStapelbar + obenBelegt }
+    var benoetigt: Int { stellplaetzeDoppelstock + stellplaetzeEinzeln }
+    var untergebracht: Int { bodenDoppelstock + bodenEinzeln + obenBelegt }
     var passt: Bool { ueberhang == 0 }
 
-    var bodenBelegt: Int { bodenStapelbar + bodenNichtStapelbar }
+    var bodenBelegt: Int { bodenDoppelstock + bodenEinzeln }
     var bodenFrei: Int { max(0, konfiguration.saeulen - bodenBelegt) }
 
-    /// Oben nutzbar sind nur Saeulen mit stapelbarer Palette darunter
-    var obenNutzbar: Int { konfiguration.doppelstock ? bodenStapelbar : 0 }
+    /// Oben nutzbar sind nur Saeulen mit doppelstockfaehiger Palette darunter
+    var obenNutzbar: Int { konfiguration.doppelstock ? bodenDoppelstock : 0 }
     var obenFrei: Int { max(0, obenNutzbar - obenBelegt) }
 
     /// Plaetze, die durch nicht stapelbare Ware blockiert sind
     var blockiert: Int {
-        konfiguration.doppelstock ? bodenNichtStapelbar : 0
+        konfiguration.doppelstock ? bodenEinzeln : 0
     }
 
-    /// Wie viel noch zusaetzlich mitkann, wenn es stapelbar ist
-    var nochMoeglichStapelbar: Int {
-        // Jede freie Saeule nimmt unten + oben eine stapelbare Palette
+    /// Wie viel noch zusaetzlich mitkann, wenn es doppelstockfaehig ist
+    var nochMoeglichDoppelstock: Int {
         bodenFrei * (konfiguration.doppelstock ? 2 : 1) + obenFrei
     }
 
     /// Wie viel noch mitkann, wenn es NICHT stapelbar ist
-    var nochMoeglichNichtStapelbar: Int {
+    var nochMoeglichEinzeln: Int {
         bodenFrei + obenFrei
     }
 
@@ -128,61 +106,46 @@ struct Ladeergebnis {
 
 struct Palettenrechner {
 
-    static func rechne(_ positionen: [Ladeposition],
+    static func rechne(_ ladung: Ladung,
                        konfiguration: Zugkonfiguration = .standard) -> Ladeergebnis {
-
-        var stapelbarStueck = 0
-        var nichtStapelbarStueck = 0
-        var halbStapelbar = 0
-        var halbNicht = 0
-
-        for p in positionen where p.anzahl > 0 {
-            switch p.art {
-            case .euro:
-                if p.stapelbar { stapelbarStueck += p.anzahl }
-                else { nichtStapelbarStueck += p.anzahl }
-            case .halb:
-                if p.stapelbar { halbStapelbar += p.anzahl }
-                else { halbNicht += p.anzahl }
-            }
-        }
 
         // Halbpaletten werden paarweise auf einen Stellplatz gesetzt.
         // Gepaart wird nur innerhalb derselben Stapelbarkeit, damit keine
-        // stapelbare Haelfte durch eine nicht stapelbare blockiert wird.
+        // doppelstockfaehige Haelfte durch eine nicht stapelbare blockiert wird.
         var hinweise: [String] = []
 
-        let slotsHalbStapelbar = (halbStapelbar + 1) / 2
-        if halbStapelbar % 2 == 1 {
-            hinweise.append("Eine stapelbare Halbpalette bleibt als halber Platz übrig.")
+        let slotsHalbDoppel = (ladung.halbDoppelstock + 1) / 2
+        if ladung.halbDoppelstock % 2 == 1 {
+            hinweise.append("Eine doppelstockfähige Halbpalette bleibt als halber Platz übrig.")
         }
-        let slotsHalbNicht = (halbNicht + 1) / 2
-        if halbNicht % 2 == 1 {
+        let slotsHalbEinzeln = (ladung.halbEinzeln + 1) / 2
+        if ladung.halbEinzeln % 2 == 1 {
             hinweise.append("Eine nicht stapelbare Halbpalette bleibt als halber Platz übrig.")
         }
 
-        let bedarfStapelbar = stapelbarStueck + slotsHalbStapelbar
-        let bedarfNicht = nichtStapelbarStueck + slotsHalbNicht
+        let bedarfDoppel = ladung.euroDoppelstock + slotsHalbDoppel
+        let bedarfEinzeln = ladung.euroEinzeln + slotsHalbEinzeln
 
-        // Belegung: stapelbare Ware zuerst auf den Boden, denn nur darauf
-        // laesst sich der zweite Stock nutzen.
+        // Belegung: doppelstockfaehige Ware zuerst auf den Boden, denn nur
+        // darauf laesst sich der zweite Stock nutzen.
         let saeulen = konfiguration.saeulen
-        let bodenStapelbar = min(bedarfStapelbar, saeulen)
-        let bodenNicht = min(bedarfNicht, saeulen - bodenStapelbar)
+        let bodenDoppel = min(bedarfDoppel, saeulen)
+        let bodenEinzeln = min(bedarfEinzeln, saeulen - bodenDoppel)
 
-        let obenNutzbar = konfiguration.doppelstock ? bodenStapelbar : 0
-        let restStapelbar = bedarfStapelbar - bodenStapelbar
-        let restNicht = bedarfNicht - bodenNicht
-        let obenBelegt = min(restStapelbar + restNicht, obenNutzbar)
+        let obenNutzbar = konfiguration.doppelstock ? bodenDoppel : 0
+        let restDoppel = bedarfDoppel - bodenDoppel
+        let restEinzeln = bedarfEinzeln - bodenEinzeln
+        let obenBelegt = min(restDoppel + restEinzeln, obenNutzbar)
 
-        let ueberhang = (restStapelbar + restNicht) - obenBelegt
+        let ueberhang = (restDoppel + restEinzeln) - obenBelegt
 
         return Ladeergebnis(
             konfiguration: konfiguration,
-            stellplaetzeStapelbar: bedarfStapelbar,
-            stellplaetzeNichtStapelbar: bedarfNicht,
-            bodenStapelbar: bodenStapelbar,
-            bodenNichtStapelbar: bodenNicht,
+            ladung: ladung,
+            stellplaetzeDoppelstock: bedarfDoppel,
+            stellplaetzeEinzeln: bedarfEinzeln,
+            bodenDoppelstock: bodenDoppel,
+            bodenEinzeln: bodenEinzeln,
             obenBelegt: obenBelegt,
             ueberhang: max(0, ueberhang),
             halbeReste: hinweise

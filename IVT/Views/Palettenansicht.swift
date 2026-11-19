@@ -1,18 +1,18 @@
 import SwiftUI
 import SwiftData
 
-/// Vorher pruefen: eintragen, was raus muss, und die App sagt,
+/// Vorher pruefen: vier Zahlen eintragen, die App sagt,
 /// ob es in den DSV-Zug passt.
 struct Palettenansicht: View {
     @EnvironmentObject private var e: Einstellungen
     @Environment(\.modelContext) private var kontext
 
-    @State private var positionen: [Ladeposition] = [Ladeposition()]
+    @State private var ladung = Ladung.leer
     @State private var zeigeSpeichern = false
     @State private var planName = ""
 
     private var ergebnis: Ladeergebnis {
-        Palettenrechner.rechne(positionen, konfiguration: e.zug)
+        Palettenrechner.rechne(ladung, konfiguration: e.zug)
     }
 
     var body: some View {
@@ -21,31 +21,36 @@ struct Palettenansicht: View {
                 Ergebnisabschnitt(ergebnis: ergebnis)
 
                 Section {
-                    ForEach($positionen) { $p in
-                        Positionszeile(position: $p)
-                    }
-                    .onDelete { i in
-                        positionen.remove(atOffsets: i)
-                        if positionen.isEmpty { positionen = [Ladeposition()] }
-                    }
-
-                    Button {
-                        withAnimation { positionen.append(Ladeposition()) }
-                    } label: {
-                        Label("Position hinzufügen", systemImage: "plus.circle.fill")
-                    }
+                    Zaehlzeile(titel: "Doppelstock ladbar",
+                               hinweis: "etwas darf darauf",
+                               wert: $ladung.euroDoppelstock)
+                    Zaehlzeile(titel: "Nicht stapelbar",
+                               hinweis: "blockiert den Platz darüber",
+                               wert: $ladung.euroEinzeln)
                 } header: {
-                    Text("Was muss raus?")
+                    Text("Europaletten")
+                }
+
+                Section {
+                    Zaehlzeile(titel: "Doppelstock ladbar",
+                               hinweis: "etwas darf darauf",
+                               wert: $ladung.halbDoppelstock)
+                    Zaehlzeile(titel: "Nicht stapelbar",
+                               hinweis: "blockiert den Platz darüber",
+                               wert: $ladung.halbEinzeln)
+                } header: {
+                    Text("Halbpaletten")
                 } footer: {
-                    Text("Stapelbar heißt: es darf etwas darauf gestellt werden. Eine nicht stapelbare Palette belegt einen Bodenplatz und blockiert den Platz darüber.")
+                    Text("Zwei Halbpaletten teilen sich einen Stellplatz. Gepaart wird nur innerhalb derselben Stapelbarkeit, damit keine doppelstockfähige Hälfte blockiert wird.")
                 }
 
                 Zugabschnitt(ergebnis: ergebnis)
 
                 Section {
                     Button("Zurücksetzen", role: .destructive) {
-                        withAnimation { positionen = [Ladeposition()] }
+                        withAnimation { ladung = .leer }
                     }
+                    .disabled(ladung.istLeer)
                 }
             }
             .navigationTitle("Laden")
@@ -57,22 +62,48 @@ struct Palettenansicht: View {
                     } label: {
                         Image(systemName: "square.and.arrow.down")
                     }
-                    .disabled(ergebnis.benoetigt == 0)
+                    .disabled(ladung.istLeer)
                 }
             }
             .alert("Ladung speichern", isPresented: $zeigeSpeichern) {
                 TextField("Name", text: $planName)
-                Button("Speichern") { speichern() }
+                Button("Speichern") {
+                    kontext.insert(Ladeplan(name: planName, ladung: ladung))
+                    try? kontext.save()
+                }
                 Button("Abbrechen", role: .cancel) {}
             }
         }
     }
+}
 
-    private func speichern() {
-        guard let daten = try? JSONEncoder().encode(positionen),
-              let json = String(data: daten, encoding: .utf8) else { return }
-        kontext.insert(Ladeplan(name: planName, positionenJSON: json))
-        try? kontext.save()
+// MARK: - Zaehlzeile
+
+/// Eine Zeile, ein Stepper. Im Hof zaehlt Tempo, nicht Tipparbeit.
+private struct Zaehlzeile: View {
+    var titel: String
+    var hinweis: String
+    @Binding var wert: Int
+
+    var body: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(titel)
+                Text(hinweis)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 8)
+            Text("\(wert)")
+                .font(.system(.title3, design: .rounded, weight: .semibold))
+                .monospacedDigit()
+                .foregroundStyle(wert == 0 ? .secondary : .primary)
+                .frame(minWidth: 34, alignment: .trailing)
+                .contentTransition(.numericText())
+            Stepper("", value: $wert, in: 0...200)
+                .labelsHidden()
+        }
+        .padding(.vertical, 2)
     }
 }
 
@@ -85,12 +116,15 @@ private struct Ergebnisabschnitt: View {
         Section {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(spacing: 10) {
-                    Image(systemName: ergebnis.passt ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                    Image(systemName: ergebnis.benoetigt == 0
+                          ? "shippingbox"
+                          : (ergebnis.passt ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"))
                         .font(.title)
-                        .foregroundStyle(ergebnis.passt ? .green : .orange)
+                        .foregroundStyle(ergebnis.benoetigt == 0
+                                         ? .secondary
+                                         : (ergebnis.passt ? .green : .orange))
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(kopf)
-                            .font(.headline)
+                        Text(kopf).font(.headline)
                         Text(unterzeile)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
@@ -131,7 +165,7 @@ private struct Ergebnisabschnitt: View {
                 if ergebnis.passt, ergebnis.benoetigt > 0 {
                     Hinweiszeile(
                         symbol: "plus.circle",
-                        text: "Es gehen noch \(ergebnis.nochMoeglichStapelbar) stapelbare oder \(ergebnis.nochMoeglichNichtStapelbar) nicht stapelbare Paletten mit."
+                        text: "Es gehen noch \(ergebnis.nochMoeglichDoppelstock) doppelstockfähige oder \(ergebnis.nochMoeglichEinzeln) nicht stapelbare Paletten mit."
                     )
                 }
             }
@@ -174,7 +208,7 @@ private struct Stapelbalken: View {
                   belegt: ergebnis.bodenBelegt,
                   nutzbar: ergebnis.konfiguration.saeulen,
                   gesamt: ergebnis.konfiguration.saeulen,
-                  nichtStapelbar: ergebnis.bodenNichtStapelbar)
+                  nichtStapelbar: ergebnis.bodenEinzeln)
         }
     }
 
@@ -233,45 +267,6 @@ private struct Hinweiszeile: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
-    }
-}
-
-// MARK: - Eingabezeile
-
-private struct Positionszeile: View {
-    @Binding var position: Ladeposition
-
-    var body: some View {
-        VStack(spacing: 10) {
-            HStack {
-                TextField("Bezeichnung, zum Beispiel Jungheinrich", text: $position.bezeichnung)
-                    .textInputAutocapitalization(.sentences)
-                Stepper(value: $position.anzahl, in: 0...200) {
-                    Text("\(position.anzahl)")
-                        .monospacedDigit()
-                        .frame(minWidth: 28, alignment: .trailing)
-                }
-                .labelsHidden()
-                .fixedSize()
-            }
-
-            HStack(spacing: 10) {
-                Picker("Art", selection: $position.art) {
-                    ForEach(Palettenart.allCases) { a in
-                        Text(a.kurz).tag(a)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .fixedSize()
-
-                Toggle(isOn: $position.stapelbar) {
-                    Text("stapelbar")
-                        .font(.footnote)
-                }
-                .toggleStyle(.switch)
-            }
-        }
-        .padding(.vertical, 4)
     }
 }
 

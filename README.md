@@ -59,6 +59,32 @@ komplett. Die Mitteilung öffnet den fertigen Entwurf direkt. Drin steht:
 Im Reiter *Mehr → Wochenbericht* lässt sich jede Woche vorher ansehen,
 auch die letzte und vorletzte.
 
+## Routenverlauf
+
+`Logic/Wegauswertung.swift` zerlegt die Wegpunkte einer Schicht in Abschnitte
+und sucht darin das Erwähnenswerte.
+
+**Tempo** (Meter je Sekunde): unter 0,3 gestanden · unter 0,9 langsam ·
+unter 1,6 normal · darüber zügig. Über 8 m/s ist kein Fußweg mehr, sondern
+ein GPS-Sprung — der wird wie eine Lücke behandelt.
+
+**Lücken** sind ehrlich: liegen zwischen zwei Punkten mehr als 5 Minuten,
+wird keine gerade Linie durch die Halle gezogen. Die Strecke ist dann
+gestrichelt und zählt null Meter.
+
+**Infopunkte** entstehen bei: Halten ab 8 Minuten, zügigen Strecken ab 80 m,
+Signallücken ab 10 Minuten, und Orten, zu denen er mindestens dreimal
+zurückkommt und insgesamt 15 Minuten verbringt. Höchstens 14 Stück —
+Start und Ende bleiben immer, vom Rest überlebt das Auffälligste.
+
+Zwei Fallen, die beim Bauen zugeschnappt sind und jetzt zu sind:
+
+- Bei 3 Minuten Haltschwelle wurde **jeder Rampengang** ein Hinweis. 38 Hinweise
+  sind kein Hinweis mehr, sondern ein Protokoll. Darum 8 Minuten plus Deckel.
+- Der Besuchszähler sprang bei GPS-Zittern zwischen Nachbarzellen hin und her
+  und machte aus neun Gängen **97 Besuche**. Jetzt zählt eine Rückkehr erst
+  nach 2 Minuten echter Abwesenheit.
+
 ## Arbeitszeiten (Auslieferungszustand)
 
 ```
@@ -76,6 +102,10 @@ Steht in `IVT/Logic/Arbeitsplan.swift`.
 LKW + baugleicher Anhänger                       =  72 Stellplätze
                                       davon am Boden  36
 ```
+
+Die Eingabe sind **vier Zahlen**, keine Bezeichnungen: Europaletten und
+Halbpaletten, je doppelstock-ladbar und nicht stapelbar. Im Hof zählt Tempo,
+nicht Tipparbeit.
 
 - 1 Europalette = 1 Stellplatz
 - 2 Halbpaletten = 1 Stellplatz (gepaart wird nur innerhalb derselben Stapelbarkeit)
@@ -151,6 +181,7 @@ IVT/
     Palettenrechner.swift Stellplatz-Logik des Zuges
     Routenhilfe.swift     Streckenlänge
     Wochenbericht.swift   Wochendaten zusammentragen
+    Wegauswertung.swift   Route in Abschnitte und Auffälligkeiten zerlegen
   Services/
     Einstellungen.swift   Vorgaben in UserDefaults
     Standortdienst.swift  Geofence und Route (CoreLocation)
@@ -162,5 +193,7 @@ IVT/
     Fotostempel.swift     Datum/Zeit/Ort ins Bild brennen
     PDFBericht.swift      Schadensbericht, Quartals- und Wochenauswertung
   Views/                  Dashboard, Zeit, Laden, Schäden, Aufgaben,
-                          Fehlerbuch, Bewegung, Wochenbericht, Einstellungen
+                          Fehlerbuch, Bewegung, Route, Wochenbericht,
+                          Einstellungen
+prototyp.html             klickbarer Prototyp für Safari auf dem iPhone
 ```

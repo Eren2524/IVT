@@ -152,6 +152,10 @@ input,select{font:inherit;color:inherit}
 .hinw{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--text2);
   line-height:1.35;margin-top:9px}
 .hinw .i{flex:none;opacity:.6}
+.zz{gap:10px}
+.zahl{font-size:21px;font-weight:600;font-variant-numeric:tabular-nums;min-width:38px;
+  text-align:right;font-family:-apple-system,"SF Pro Rounded",system-ui;flex:none}
+.zahl.aus{color:var(--text3)}
 .pos{padding:11px 16px;border-top:.5px solid var(--linie)}
 .pos:first-child{border-top:0}
 .pos .r1{display:flex;gap:10px;align-items:center;margin-bottom:9px}
@@ -189,6 +193,37 @@ input,select{font:inherit;color:inherit}
 .fb .k span{color:var(--text2);font-size:13px;font-variant-numeric:tabular-nums;flex:none}
 .fb .s{height:6px;border-radius:3px;background:var(--fill2);overflow:hidden}
 .fb .s i{display:block;height:100%;border-radius:3px;background:var(--blau)}
+
+/* ---------- Routenkarte ---------- */
+.kartenbox{position:relative;background:var(--fill3);border-bottom:.5px solid var(--linie)}
+.kartenbox svg{display:block;width:100%;height:auto}
+.legende{position:absolute;left:50%;bottom:9px;transform:translateX(-50%);
+  display:flex;gap:10px;padding:6px 11px;border-radius:20px;white-space:nowrap;
+  background:var(--leiste);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  font-size:10px;box-shadow:0 1px 6px #0000001f}
+.legende span{display:flex;align-items:center;gap:4px}
+.legende i{width:13px;height:4px;border-radius:2px;display:block}
+.reglerbox{padding:11px 16px 8px;background:var(--leiste);border-bottom:.5px solid var(--linie)}
+.reglerkopf{display:flex;font-size:12px;color:var(--text2);margin-bottom:4px;
+  font-variant-numeric:tabular-nums}
+.reglerkopf b{font-size:14px;color:var(--text)}
+#r-schieber{width:100%;-webkit-appearance:none;appearance:none;height:28px;background:none}
+#r-schieber::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:var(--fill)}
+#r-schieber::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;
+  background:#fff;box-shadow:0 1px 4px #00000040;margin-top:-11px}
+#r-schieber::-moz-range-track{height:4px;border-radius:2px;background:var(--fill)}
+#r-schieber::-moz-range-thumb{width:26px;height:26px;border:0;border-radius:50%;background:#fff;
+  box-shadow:0 1px 4px #00000040}
+.ip{display:flex;gap:12px;padding:11px 16px;border-top:.5px solid var(--linie);
+  width:100%;text-align:left;align-items:flex-start}
+.ip:first-child{border-top:0}
+.ip.an{background:color-mix(in srgb,var(--blau) 12%,transparent)}
+.ip .s{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;flex:none;
+  color:#fff;font-size:13px}
+.ip .t{font-size:15px;font-weight:500}
+.ip .u{font-size:12px;color:var(--text2);line-height:1.35;margin-top:1px}
+.ip .z2{font-size:12px;color:var(--text3);margin-left:auto;flex:none;
+  font-variant-numeric:tabular-nums}
 
 /* ---------- Mail-Blatt ---------- */
 .blattbg{position:fixed;inset:0;background:#00000059;z-index:50;opacity:0;pointer-events:none;
@@ -277,7 +312,7 @@ input,select{font:inherit;color:inherit}
       <div class="kz">
         <div><div class="l">Schicht</div><div class="v" id="bw-schicht">6.412</div></div>
         <div><div class="l">Heute</div><div class="v">7.038</div></div>
-        <div><div class="l">Route</div><div class="v">1,8 km</div></div>
+        <div><div class="l">Route</div><div class="v" data-strecke>—</div></div>
       </div>
     </div>
 
@@ -350,13 +385,16 @@ input,select{font:inherit;color:inherit}
   </div>
 
   <div class="gruppe">
-    <h3>Was muss raus?</h3>
-    <div class="liste" id="poslist"></div>
-    <div class="liste" style="margin-top:9px">
-      <button class="z blau" onclick="posNeu()">＋&nbsp; Position hinzufügen</button>
-    </div>
-    <p class="fuss">Stapelbar heißt: es darf etwas darauf gestellt werden. Eine nicht
-      stapelbare Palette belegt einen Bodenplatz und blockiert den Platz darüber.<br><br>
+    <h3>Europaletten</h3>
+    <div class="liste" id="euro"></div>
+  </div>
+
+  <div class="gruppe">
+    <h3>Halbpaletten</h3>
+    <div class="liste" id="halb"></div>
+    <p class="fuss">Zwei Halbpaletten teilen sich einen Stellplatz. Gepaart wird nur
+      innerhalb derselben Stapelbarkeit, damit keine doppelstockfähige Hälfte
+      blockiert wird.<br><br>
       <b>Das hier rechnet echt</b> — dieselbe Logik wie in der App. Dreh an den Zahlen
       und prüfe, ob es mit dem übereinstimmt, was im Hof passiert.</p>
   </div>
@@ -530,7 +568,7 @@ input,select{font:inherit;color:inherit}
     <div class="liste">
       <div class="z" style="padding:14px 16px"><div class="kz" style="width:100%">
         <div><div class="l">Schritte heute</div><div class="v">7.038</div></div>
-        <div><div class="l">Strecke</div><div class="v">1,8 km</div></div>
+        <div><div class="l">Strecke</div><div class="v" data-strecke>—</div></div>
         <div><div class="l">Punkte</div><div class="v">47</div></div>
       </div></div>
     </div>
@@ -539,6 +577,18 @@ input,select{font:inherit;color:inherit}
   </div>
   <div class="gruppe">
     <h3>Route</h3>
+    <div class="liste">
+      <button class="z" onclick="unter('route')">
+        <span class="sym" style="background:var(--indigo)">〰</span>Verlauf über die Zeit
+        <span class="wert" id="bw-punkte">—</span>
+        <svg class="pfeil" viewBox="0 0 8 14"><path d="M1 1l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></button>
+    </div>
+    <p class="fuss">Der Verlauf färbt die Strecke nach Tempo ein und setzt Infopunkte, wo du
+      lange standest, zügig gingst oder kein Signal hattest.</p>
+  </div>
+
+  <div class="gruppe">
+    <h3>Übersicht</h3>
     <div class="liste" style="padding:0;overflow:hidden">
       <svg viewBox="0 0 340 200" style="display:block;width:100%;height:auto;background:var(--fill3)">
         <rect x="42" y="36" width="150" height="86" rx="4" fill="var(--fill2)"/>
@@ -648,6 +698,48 @@ input,select{font:inherit;color:inherit}
   </div>
 </div>
 
+<div class="unter" id="u-route">
+  <div class="kopfleiste" style="top:0">
+    <button class="zurueck" onclick="zu();unter('bewegung')"><svg viewBox="0 0 11 19"><path d="M9.5 1.5L2 9.5l7.5 8" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Bewegung</button>
+    <div class="mitte">Routenverlauf</div><div style="width:92px"></div>
+  </div>
+
+  <div class="kartenbox">
+    <svg id="rk" viewBox="0 0 340 240"></svg>
+    <div class="legende" id="rlegende"></div>
+  </div>
+
+  <div class="reglerbox">
+    <div class="reglerkopf">
+      <span id="r-von">—</span>
+      <span style="flex:1;text-align:center">
+        <b id="r-jetzt">—</b> <span id="r-art"></span>
+      </span>
+      <span id="r-bis">—</span>
+    </div>
+    <input type="range" id="r-schieber" min="0" max="100" value="0" oninput="reglerBewegt()">
+  </div>
+
+  <div class="gruppe" style="margin-top:16px">
+    <div class="liste">
+      <div class="z" style="padding:14px 16px"><div class="kz" style="width:100%">
+        <div><div class="l">Strecke</div><div class="v" id="r-strecke">—</div></div>
+        <div><div class="l">In Bewegung</div><div class="v" id="r-geh">—</div></div>
+        <div><div class="l">Gestanden</div><div class="v" id="r-stand">—</div></div>
+      </div></div>
+      <div class="z">Schnitt beim Gehen<span class="wert" id="r-schnitt">—</span></div>
+      <div class="z">Ohne Signal<span class="wert" id="r-luecke">—</span></div>
+    </div>
+  </div>
+
+  <div class="gruppe">
+    <h3>Auffälligkeiten</h3>
+    <div class="liste" id="r-liste"></div>
+    <p class="fuss">Automatisch erkannt: lange Halte, zügige Strecken, Orte mit mehreren
+      Besuchen und Abschnitte ohne Signal. Antippen zeigt die Stelle auf der Karte.</p>
+  </div>
+</div>
+
 <!-- ============ MAIL ============ -->
 <div class="blattbg" id="blattbg" onclick="mailZu()"></div>
 <div class="blatt" id="blatt">
@@ -692,6 +784,7 @@ function zeig(id){
 function unter(id){
   const el = document.getElementById("u-"+id);
   if(el){ el.classList.add("an"); el.scrollTop = 0; }
+  if(id === "route") routeZeichnen();
 }
 function zu(){ document.querySelectorAll(".unter").forEach(u => u.classList.remove("an")); }
 
@@ -839,47 +932,38 @@ const SAEULEN = ZUG.koffer * ZUG.bodenProKoffer;         // 36
 const OBEN    = ZUG.doppelstock ? SAEULEN : 0;           // 36
 const GESAMT  = SAEULEN + OBEN;                          // 72
 
-let positionen = [
-  {bez:"Jungheinrich Ladegeräte", anz:24, art:"euro", stapelbar:true},
-  {bez:"Linde Sondergeräte",      anz:8,  art:"euro", stapelbar:false},
-  {bez:"Ersatzteile",             anz:6,  art:"halb", stapelbar:true}
-];
+let L = {euroDoppel:24, euroEinzeln:8, halbDoppel:6, halbEinzeln:0};
 
 function rechne(){
-  let euroS=0, euroN=0, halbS=0, halbN=0;
-  for(const p of positionen){
-    if(p.anz <= 0) continue;
-    if(p.art === "euro"){ p.stapelbar ? euroS += p.anz : euroN += p.anz; }
-    else                { p.stapelbar ? halbS += p.anz : halbN += p.anz; }
-  }
   const hinweise = [];
-  const slotsHalbS = Math.ceil(halbS/2);
-  if(halbS % 2 === 1) hinweise.push(["▱","Eine stapelbare Halbpalette bleibt als halber Platz übrig."]);
-  const slotsHalbN = Math.ceil(halbN/2);
-  if(halbN % 2 === 1) hinweise.push(["▱","Eine nicht stapelbare Halbpalette bleibt als halber Platz übrig."]);
+  const slotsHalbD = Math.ceil(L.halbDoppel/2);
+  if(L.halbDoppel % 2 === 1)
+    hinweise.push(["▱","Eine doppelstockfähige Halbpalette bleibt als halber Platz übrig."]);
+  const slotsHalbE = Math.ceil(L.halbEinzeln/2);
+  if(L.halbEinzeln % 2 === 1)
+    hinweise.push(["▱","Eine nicht stapelbare Halbpalette bleibt als halber Platz übrig."]);
 
-  const bedarfS = euroS + slotsHalbS;
-  const bedarfN = euroN + slotsHalbN;
+  const bedarfD = L.euroDoppel + slotsHalbD;
+  const bedarfE = L.euroEinzeln + slotsHalbE;
 
-  // Stapelbares zuerst auf den Boden, nur darauf ist der 2. Stock nutzbar
-  const bodenS = Math.min(bedarfS, SAEULEN);
-  const bodenN = Math.min(bedarfN, SAEULEN - bodenS);
-  const obenNutzbar = ZUG.doppelstock ? bodenS : 0;
-  const rest = (bedarfS - bodenS) + (bedarfN - bodenN);
+  // Doppelstockfähiges zuerst auf den Boden, nur darauf ist der 2. Stock nutzbar
+  const bodenD = Math.min(bedarfD, SAEULEN);
+  const bodenE = Math.min(bedarfE, SAEULEN - bodenD);
+  const obenNutzbar = ZUG.doppelstock ? bodenD : 0;
+  const rest = (bedarfD - bodenD) + (bedarfE - bodenE);
   const obenBelegt = Math.min(rest, obenNutzbar);
   const ueberhang = Math.max(0, rest - obenBelegt);
 
-  const bodenBelegt = bodenS + bodenN;
+  const bodenBelegt = bodenD + bodenE;
   const untergebracht = bodenBelegt + obenBelegt;
   const bodenFrei = Math.max(0, SAEULEN - bodenBelegt);
   const obenFrei = Math.max(0, obenNutzbar - obenBelegt);
 
-  return {bedarfS, bedarfN, bodenS, bodenN, obenBelegt, ueberhang, hinweise,
-          bodenBelegt, untergebracht, bodenFrei, obenFrei, obenNutzbar,
-          benoetigt: bedarfS + bedarfN,
-          blockiert: ZUG.doppelstock ? bodenN : 0,
-          nochStapelbar: bodenFrei * (ZUG.doppelstock ? 2 : 1) + obenFrei,
-          nochNicht: bodenFrei + obenFrei,
+  return {bodenD, bodenE, obenBelegt, ueberhang, hinweise, bodenBelegt, untergebracht,
+          bodenFrei, obenFrei, obenNutzbar, benoetigt: bedarfD + bedarfE,
+          blockiert: ZUG.doppelstock ? bodenE : 0,
+          nochDoppel: bodenFrei * (ZUG.doppelstock ? 2 : 1) + obenFrei,
+          nochEinzeln: bodenFrei + obenFrei,
           passt: ueberhang === 0};
 }
 
@@ -904,7 +988,7 @@ function rechnerZeichnen(){
     : `${r.untergebracht} Stellplätze · ${perKoffer[0]} im LKW, ${perKoffer[1]} im Anhänger`;
 
   gitter(document.getElementById("pr-oben"), r.obenBelegt, 0, r.obenNutzbar, OBEN);
-  gitter(document.getElementById("pr-boden"), r.bodenBelegt, r.bodenN, SAEULEN, SAEULEN);
+  gitter(document.getElementById("pr-boden"), r.bodenBelegt, r.bodenE, SAEULEN, SAEULEN);
   document.getElementById("pr-obenz").textContent  = `${r.obenBelegt} / ${OBEN}`;
   document.getElementById("pr-bodenz").textContent = `${r.bodenBelegt} / ${SAEULEN}`;
 
@@ -919,48 +1003,45 @@ function rechnerZeichnen(){
   if(r.blockiert > 0) h.push(["🚫", `${r.blockiert} Plätze im zweiten Stock sind blockiert, weil darunter nicht stapelbare Ware steht.`]);
   h.push(...r.hinweise);
   if(r.passt && r.benoetigt > 0)
-    h.push(["➕", `Es gehen noch ${r.nochStapelbar} stapelbare oder ${r.nochNicht} nicht stapelbare Paletten mit.`]);
+    h.push(["➕", `Es gehen noch ${r.nochDoppel} doppelstockfähige oder ${r.nochEinzeln} nicht stapelbare Paletten mit.`]);
   document.getElementById("pr-hinweise").innerHTML = h.map(([i,t]) =>
     `<div class="hinw"><span class="i">${i}</span><span>${t}</span></div>`).join("");
 }
 
+/* Vier Zählzeilen, keine Bezeichnungen. Im Hof zählt Tempo, nicht Tipparbeit. */
+const ZEILEN = [
+  ["euro","euroDoppel",   "Doppelstock ladbar", "etwas darf darauf"],
+  ["euro","euroEinzeln",  "Nicht stapelbar",    "blockiert den Platz darüber"],
+  ["halb","halbDoppel",   "Doppelstock ladbar", "etwas darf darauf"],
+  ["halb","halbEinzeln",  "Nicht stapelbar",    "blockiert den Platz darüber"]
+];
+
 function posZeichnen(){
-  document.getElementById("poslist").innerHTML = positionen.map((p,i) =>
-    `<div class="pos">
-       <div class="r1">
-         <input type="text" value="${p.bez.replace(/"/g,"&quot;")}"
-           placeholder="Bezeichnung" oninput="positionen[${i}].bez=this.value">
-         <div class="step">
-           <button onclick="posAnz(${i},-1)">−</button>
-           <span id="anz-${i}">${p.anz}</span>
-           <button onclick="posAnz(${i},1)">＋</button>
-         </div>
-       </div>
-       <div class="r2">
-         <div class="seg">
-           <button class="${p.art==='euro'?'an':''}" onclick="posArt(${i},'euro')">Euro</button>
-           <button class="${p.art==='halb'?'an':''}" onclick="posArt(${i},'halb')">Halb</button>
-         </div>
-         <div class="schalter">stapelbar
-           <div class="sw ${p.stapelbar?'an':''}" onclick="posStapel(${i})"><i></i></div>
-         </div>
-       </div>
-     </div>`).join("");
+  for(const ziel of ["euro","halb"]){
+    document.getElementById(ziel).innerHTML = ZEILEN
+      .filter(z => z[0] === ziel)
+      .map(([,k,titel,hinweis]) => `
+        <div class="z zz">
+          <div style="flex:1;min-width:0">
+            <div>${titel}</div>
+            <div class="klein" style="font-size:12px">${hinweis}</div>
+          </div>
+          <span class="zahl ${L[k] === 0 ? 'aus' : ''}" id="z-${k}">${L[k]}</span>
+          <div class="step">
+            <button onclick="zaehl('${k}',-1)">−</button>
+            <button onclick="zaehl('${k}',1)">＋</button>
+          </div>
+        </div>`).join("");
+  }
 }
-function posAnz(i,d){
-  positionen[i].anz = Math.max(0, Math.min(200, positionen[i].anz + d));
-  document.getElementById("anz-"+i).textContent = positionen[i].anz;
+function zaehl(k,d){
+  L[k] = Math.max(0, Math.min(200, L[k] + d));
+  const el = document.getElementById("z-"+k);
+  el.textContent = L[k];
+  el.classList.toggle("aus", L[k] === 0);
   rechnerZeichnen();
 }
-function posArt(i,a){ positionen[i].art = a; posZeichnen(); rechnerZeichnen(); }
-function posStapel(i){ positionen[i].stapelbar = !positionen[i].stapelbar; posZeichnen(); rechnerZeichnen(); }
-function posNeu(){
-  positionen.push({bez:"", anz:1, art:"euro", stapelbar:true});
-  posZeichnen(); rechnerZeichnen();
-}
-</script>
 
-<script>
 /* ======================= Schadensfotos ======================= */
 /* Ein gezeichnetes Foto, damit sichtbar ist, wo der Stempel sitzt
    und wie er aussieht. In der App ist er echt ins Bild gebrannt. */
@@ -1177,6 +1258,336 @@ function mailWoche(){
     [{ik:"📄", name:"Wochenbericht 16.11.–22.11.2026.pdf", groesse:"PDF · 0,3 MB"}]);
 }
 
+
+/* ======================= Routenverlauf ======================= */
+/* Derselbe Klassifizierer wie Wegauswertung.swift, gefüttert mit einem
+   synthetischen Schichttag. 1 Karteneinheit = 1,1 m. */
+const EINHEIT = 1.1;
+const G_HALT = 0.3, G_LANGSAM = 0.9, G_ZUEGIG = 1.6, G_UNSINN = 8.0;
+const LUECKE_AB = 300, HALT_AB = 480, ZUEGIG_AB = 80, ZELLE = 30;
+const LUECKE_INFO_AB = 600, MAX_INFO = 14, BESUCH_PAUSE = 120;
+
+const ORTE = {
+  tor:[40,208], hof:[145,196], rampeEin:[208,162],
+  stapel:[128,100], rampeA:[232,96], rampeB:[262,128],
+  buero:[150,44], pause:[70,62]
+};
+
+/* [minute, x, y] – null statt Koordinaten heißt: hier kam nichts an */
+function schichtBauen(){
+  const w = [];
+  let t = 0;
+  const geh = (ziel, minuten) => { t += minuten; w.push([t, ...ziel]); };
+  // Gehzeiten sind bewusst gemächlich: im Hof wird getragen, nicht gejoggt.
+  const steh = (minuten) => { const l = w[w.length-1]; t += minuten; w.push([t, l[1], l[2]]); };
+  const luecke = (minuten) => { t += minuten; w.push([t, null, null]); };
+
+  w.push([0, ...ORTE.tor]);
+  geh(ORTE.hof, 1.8);  steh(7);
+  geh(ORTE.rampeEin, 1); luecke(16);
+
+  // Vormittag: fünf Runden zwischen Stapelplatz und Rampe
+  w.push([t, ...ORTE.stapel]);
+  const runden = (n, stehA, stehB) => {
+    for(let i=0;i<n;i++){
+      geh(ORTE.rampeA, 1.8); steh(stehA);
+      geh(ORTE.stapel, 1.8); steh(stehB);
+    }
+  };
+  runden(5, 11, 5);
+
+  luecke(60);                               // in der Halle
+  w.push([t, ...ORTE.pause]); steh(10);     // Frühstück 9:30–9:40
+  luecke(80);
+
+  w.push([t, ...ORTE.stapel]);
+  runden(4, 10, 5);
+  geh(ORTE.buero, 1.1);                     // zügig
+  steh(6);
+
+  luecke(30);                               // Mittag 12:30–13:00
+  w.push([t, ...ORTE.stapel]);
+  runden(2, 10, 5);
+  geh(ORTE.rampeB, 1.2);                    // zügig
+  steh(7);
+  luecke(10);
+  w.push([t, ...ORTE.pause]);
+  geh(ORTE.tor, 1.6); steh(3);
+  return w;
+}
+
+/* Stützpunkte zu einer Punktwolke auflösen, alle 20 Sekunden einer */
+function punkteBauen(){
+  const w = schichtBauen();
+  const start = 6*60 + 28;                 // 6:28
+  const pk = [];
+  for(let i=1;i<w.length;i++){
+    const [t0,x0,y0] = w[i-1], [t1,x1,y1] = w[i];
+    if(x1 === null || x0 === null) continue;      // Lücke: nichts erzeugen
+    const dauer = (t1 - t0) * 60;
+    const n = Math.max(1, Math.round(dauer / 20));
+    for(let k=0;k<=n;k++){
+      const f = k/n;
+      const jitter = (x0===x1 && y0===y1) ? 1.4 : 0.5;
+      pk.push({
+        min: start + t0 + (t1-t0)*f,
+        x: x0 + (x1-x0)*f + (Math.random()-.5)*jitter,
+        y: y0 + (y1-y0)*f + (Math.random()-.5)*jitter
+      });
+    }
+  }
+  return pk.sort((a,b) => a.min - b.min);
+}
+
+function uhr(min){
+  const m = Math.round(min);
+  return String(Math.floor(m/60)).padStart(2,"0") + ":" + String(m%60).padStart(2,"0");
+}
+function minText(sek){
+  const m = Math.round(sek/60);
+  if(m >= 60) return Math.floor(m/60) + ":" + String(m%60).padStart(2,"0") + " h";
+  return Math.max(1,m) + " min";
+}
+
+function auswerten(pk){
+  const st = [];
+  for(let i=1;i<pk.length;i++){
+    const p = pk[i-1], q = pk[i];
+    const dt = (q.min - p.min) * 60;
+    if(dt <= 0) continue;
+    const m = Math.hypot(q.x-p.x, q.y-p.y) * EINHEIT;
+    const v = m/dt;
+    let art;
+    if(dt >= LUECKE_AB || v > G_UNSINN) art = "luecke";
+    else if(v < G_HALT)    art = "halt";
+    else if(v < G_LANGSAM) art = "langsam";
+    else if(v < G_ZUEGIG)  art = "normal";
+    else                   art = "zuegig";
+    st.push({von:p.min, bis:q.min, a:[p.x,p.y], b:[q.x,q.y],
+             m: art === "luecke" ? 0 : m, art});
+  }
+  // gleiche Gangart zusammenfassen
+  let ab = [];
+  for(const x of st){
+    const l = ab[ab.length-1];
+    if(l && l.art === x.art){ l.bis = x.bis; l.m += x.m; l.ko.push(x.b); }
+    else ab.push({von:x.von, bis:x.bis, ko:[x.a, x.b], m:x.m, art:x.art});
+  }
+  // Schnipsel unter 30 s im Nachbarn aufgehen lassen
+  const glatt = [];
+  for(const x of ab){
+    const d = (x.bis - x.von) * 60;
+    const l = glatt[glatt.length-1];
+    if(x.art !== "luecke" && d < 30 && l && l.art !== "luecke"){
+      l.bis = x.bis; l.m += x.m; l.ko.push(...x.ko.slice(1));
+    } else glatt.push(x);
+  }
+  ab = glatt;
+
+  let meter = 0, geh = 0, stand = 0, luecken = 0, maxKmh = 0;
+  for(const x of ab){
+    const d = (x.bis - x.von) * 60;
+    meter += x.m;
+    if(x.art === "halt") stand += d;
+    else if(x.art === "luecke") luecken += d;
+    else { geh += d; maxKmh = Math.max(maxKmh, x.m/d*3.6); }
+  }
+
+  // Infopunkte
+  const inf = [];
+  const mitte = x => x.ko[Math.floor(x.ko.length/2)];
+  if(ab.length) inf.push({art:"start", min:ab[0].von, ort:ab[0].ko[0],
+    titel:"Losgegangen", text:`Erster Punkt um ${uhr(ab[0].von)}.`});
+  for(const x of ab){
+    const d = (x.bis - x.von) * 60;
+    if(x.art === "halt" && d >= HALT_AB)
+      inf.push({art:"halt", min:x.von, dauer:d, ort:mitte(x), titel:`${minText(d)} gestanden`,
+        text:`Von ${uhr(x.von)} bis ${uhr(x.bis)} kaum bewegt.`});
+    else if(x.art === "zuegig" && x.m >= ZUEGIG_AB)
+      inf.push({art:"zuegig", min:x.von, dauer:d, ort:mitte(x), titel:"Zügig unterwegs",
+        text:`${x.m.toFixed(0)} m in ${minText(d)}, rund ${(x.m/d*3.6).toFixed(1)} km/h.`});
+    else if(x.art === "luecke" && d >= LUECKE_INFO_AB)
+      inf.push({art:"luecke", min:x.von, dauer:d, ort:mitte(x), titel:`${minText(d)} kein Signal`,
+        text:`Zwischen ${uhr(x.von)} und ${uhr(x.bis)} kam nichts an — vermutlich in der Halle.`});
+  }
+  // Aufenthaltsorte: Raster von 30 m
+  const zellen = {};
+  for(let i=1;i<pk.length;i++){
+    const p = pk[i-1], q = pk[i];
+    const dt = (q.min - p.min)*60;
+    if(dt <= 0 || dt >= LUECKE_AB) continue;
+    const k = Math.round(p.x*EINHEIT/ZELLE) + "|" + Math.round(p.y*EINHEIT/ZELLE);
+    const z = zellen[k] || (zellen[k] =
+      {zeit:0, besuche:0, sx:0, sy:0, n:0, erste:p.min, zuletzt:null});
+    z.zeit += dt; z.sx += p.x; z.sy += p.y; z.n++;
+    // Neuer Besuch nur nach echter Abwesenheit, sonst zählt jedes Zittern
+    // an der Zellengrenze als Rückkehr.
+    if(z.zuletzt === null) z.besuche = 1;
+    else if((p.min - z.zuletzt)*60 >= BESUCH_PAUSE) z.besuche++;
+    z.zuletzt = p.min;
+  }
+  Object.values(zellen)
+    .filter(z => z.zeit >= 15*60 && z.besuche >= 3)
+    .sort((a,b) => b.zeit - a.zeit).slice(0,2)
+    .forEach(z => inf.push({art:"aufenthalt", min:z.erste, dauer:z.zeit, ort:[z.sx/z.n, z.sy/z.n],
+      titel:"Oft hier gewesen",
+      text:`${z.besuche}× zurückgekommen, zusammen ${minText(z.zeit)}.`}));
+
+  if(ab.length){
+    const l = ab[ab.length-1];
+    inf.push({art:"ende", min:l.bis, ort:l.ko[l.ko.length-1], titel:"Letzter Punkt",
+      text:`Um ${uhr(l.bis)} aufgehört aufzuzeichnen.`});
+  }
+  // Start und Ende bleiben immer, vom Rest überlebt das Auffälligste
+  let gezeigt = inf;
+  if(inf.length > MAX_INFO){
+    const fest = inf.filter(p => p.art === "start" || p.art === "ende");
+    const gew = p => ({aufenthalt:100000, luecke:50000, zuegig:20000, halt:0}[p.art] || 0)
+                     + (p.dauer || 0);
+    gezeigt = fest.concat(
+      inf.filter(p => p.art !== "start" && p.art !== "ende")
+         .sort((a,b) => gew(b) - gew(a))
+         .slice(0, Math.max(0, MAX_INFO - fest.length)));
+  }
+  gezeigt.sort((a,b) => a.min - b.min);
+
+  return {ab, inf: gezeigt, meter, geh, stand, luecken, maxKmh,
+          von: ab.length ? ab[0].von : 0, bis: ab.length ? ab[ab.length-1].bis : 0,
+          schnittKmh: geh > 0 ? meter/geh*3.6 : 0};
+}
+
+const RFARBE = {halt:"#FF9500", langsam:"#30B0C7", normal:"#007AFF",
+                zuegig:"#AF52DE", luecke:"#8E8E93"};
+const RART = {halt:"Gestanden", langsam:"Langsam", normal:"Normal",
+              zuegig:"Zügig", luecke:"Kein Signal"};
+const IFARBE = {start:"#34C759", ende:"#FF3B30", halt:"#FF9500",
+                zuegig:"#AF52DE", aufenthalt:"#5856D6", luecke:"#8E8E93"};
+const ISYM = {start:"▶", ende:"■", halt:"⏸", zuegig:"⚡", aufenthalt:"📍", luecke:"⃠"};
+
+let R = null, rGewaehlt = -1;
+
+function routePosition(min){
+  if(!R || !R.ab.length) return null;
+  if(min <= R.von) return R.ab[0].ko[0];
+  const l = R.ab[R.ab.length-1];
+  if(min >= R.bis) return l.ko[l.ko.length-1];
+  for(const a of R.ab){
+    if(min >= a.von && min <= a.bis){
+      if(a.ko.length < 2) return a.ko[0];
+      const f = (min - a.von)/(a.bis - a.von) * (a.ko.length - 1);
+      const i = Math.min(a.ko.length-2, Math.max(0, Math.floor(f)));
+      const r = f - i, p = a.ko[i], q = a.ko[i+1];
+      return [p[0] + (q[0]-p[0])*r, p[1] + (q[1]-p[1])*r];
+    }
+  }
+  let letzter = null;
+  for(const a of R.ab) if(a.bis <= min) letzter = a;
+  return letzter ? letzter.ko[letzter.ko.length-1] : null;
+}
+function routeArt(min){
+  if(!R) return null;
+  for(const a of R.ab) if(min >= a.von && min <= a.bis) return a.art;
+  return null;
+}
+
+function routeKarteZeichnen(jetzt){
+  const kulisse = `
+    <rect width="340" height="240" fill="transparent"/>
+    <rect x="95" y="130" width="130" height="86" rx="4" fill="var(--fill2)"/>
+    <text x="160" y="178" text-anchor="middle" font-size="10" fill="var(--text3)"
+      font-family="system-ui">Halle</text>
+    <rect x="196" y="58" width="104" height="60" rx="4" fill="var(--fill2)"/>
+    <text x="248" y="92" text-anchor="middle" font-size="10" fill="var(--text3)"
+      font-family="system-ui">Verladehof</text>
+    <rect x="120" y="22" width="62" height="34" rx="4" fill="var(--fill2)"/>
+    <text x="151" y="43" text-anchor="middle" font-size="9" fill="var(--text3)"
+      font-family="system-ui">Büro</text>
+    <circle cx="40" cy="208" r="4" fill="var(--text3)"/>
+    <text x="40" y="226" text-anchor="middle" font-size="9" fill="var(--text3)"
+      font-family="system-ui">Tor</text>`;
+
+  const wege = R.ab.filter(a => a.ko.length > 1).map(a => {
+    const d = "M" + a.ko.map(k => `${k[0].toFixed(1)} ${k[1].toFixed(1)}`).join(" L");
+    return a.art === "luecke"
+      ? `<path d="${d}" stroke="${RFARBE.luecke}" stroke-width="2" fill="none"
+           stroke-dasharray="4 6" opacity=".55"/>`
+      : `<path d="${d}" stroke="${RFARBE[a.art]}" stroke-width="4.5" fill="none"
+           stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>`;
+  }).join("");
+
+  const punkte = R.inf.map((p,i) => `
+    <g onclick="routeWaehle(${i})" style="cursor:pointer">
+      <circle cx="${p.ort[0].toFixed(1)}" cy="${p.ort[1].toFixed(1)}"
+        r="${i === rGewaehlt ? 12 : 9}" fill="${IFARBE[p.art]}"
+        stroke="#fff" stroke-width="${i === rGewaehlt ? 3 : 1.8}"/>
+      <text x="${p.ort[0].toFixed(1)}" y="${(p.ort[1]+3.4).toFixed(1)}" text-anchor="middle"
+        font-size="9" fill="#fff" style="pointer-events:none">${ISYM[p.art]}</text>
+    </g>`).join("");
+
+  const pos = routePosition(jetzt);
+  const marke = pos ? `
+    <circle cx="${pos[0].toFixed(1)}" cy="${pos[1].toFixed(1)}" r="9" fill="#fff" opacity=".95"/>
+    <circle cx="${pos[0].toFixed(1)}" cy="${pos[1].toFixed(1)}" r="5.5" fill="#007AFF"/>` : "";
+
+  document.getElementById("rk").innerHTML = kulisse + wege + punkte + marke;
+}
+
+function routeZeichnen(){
+  if(!R) R = auswerten(punkteBauen());
+
+  document.getElementById("rlegende").innerHTML =
+    ["halt","langsam","normal","zuegig"].map(g =>
+      `<span><i style="background:${RFARBE[g]}"></i>${RART[g]}</span>`).join("");
+
+  const sch = document.getElementById("r-schieber");
+  sch.min = R.von; sch.max = R.bis; sch.step = 0.5;
+  if(+sch.value < R.von || +sch.value > R.bis) sch.value = R.von;
+
+  document.getElementById("r-von").textContent = uhr(R.von);
+  document.getElementById("r-bis").textContent = uhr(R.bis);
+  document.getElementById("r-strecke").textContent = (R.meter/1000).toFixed(2) + " km";
+  document.getElementById("r-geh").textContent = minText(R.geh);
+  document.getElementById("r-stand").textContent = minText(R.stand);
+  document.getElementById("r-schnitt").textContent = R.schnittKmh.toFixed(1) + " km/h";
+  document.getElementById("r-luecke").textContent = minText(R.luecken);
+  document.getElementById("bw-punkte").textContent = R.inf.length + " Punkte";
+
+  document.getElementById("r-liste").innerHTML = R.inf.map((p,i) =>
+    `<button class="ip ${i === rGewaehlt ? 'an' : ''}" onclick="routeWaehle(${i})">
+       <span class="s" style="background:${IFARBE[p.art]}">${ISYM[p.art]}</span>
+       <span style="flex:1;min-width:0">
+         <span class="t" style="display:block">${p.titel}</span>
+         <span class="u" style="display:block">${p.text}</span>
+       </span>
+       <span class="z2">${uhr(p.min)}</span>
+     </button>`).join("");
+
+  reglerBewegt();
+
+  // Dashboard und Bewegungsseite sollen dieselbe Zahl zeigen wie die Karte
+  const km = (R.meter/1000).toFixed(1).replace(".", ",") + " km";
+  document.querySelectorAll("[data-strecke]").forEach(el => el.textContent = km);
+}
+
+function reglerBewegt(){
+  const jetzt = +document.getElementById("r-schieber").value;
+  document.getElementById("r-jetzt").textContent = uhr(jetzt);
+  const art = routeArt(jetzt);
+  const el = document.getElementById("r-art");
+  el.textContent = art ? "· " + RART[art] : "";
+  el.style.color = art ? RFARBE[art] : "";
+  routeKarteZeichnen(jetzt);
+}
+
+function routeWaehle(i){
+  rGewaehlt = i;
+  const p = R.inf[i];
+  document.getElementById("r-schieber").value = p.min;
+  routeZeichnen();
+  const el = document.querySelectorAll("#r-liste .ip")[i];
+  if(el) el.scrollIntoView({block:"nearest", behavior:"smooth"});
+}
+
 /* ======================= Fehlerbalken ======================= */
 const fehler = [
   ["Lieferschein fehlt oder falsch", 8],
@@ -1204,6 +1615,8 @@ posZeichnen();
 rechnerZeichnen();
 schaedenZeichnen();
 fehlerZeichnen();
+R = auswerten(punkteBauen());
+routeZeichnen();
 
 document.addEventListener("keydown", e => { if(e.key === "Escape"){ mailZu(); zu(); } });
 </script>
