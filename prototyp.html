@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<title>IVT — Prototyp</title>
+<style>
+:root{
+  --blau:#007AFF; --gruen:#34C759; --orange:#FF9500; --rot:#FF3B30;
+  --indigo:#5856D6; --grau:#8E8E93;
+  --bg:#F2F2F7; --karte:#FFFFFF; --karte2:#FFFFFF;
+  --text:#000000; --text2:#3C3C4399; --text3:#3C3C434D;
+  --linie:#3C3C434A; --fill:#78788033; --fill2:#7878801F; --fill3:#78788014;
+  --leiste:rgba(249,249,249,.82);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --blau:#0A84FF; --gruen:#30D158; --orange:#FF9F0A; --rot:#FF453A;
+    --indigo:#5E5CE6; --grau:#8E8E93;
+    --bg:#000000; --karte:#1C1C1E; --karte2:#2C2C2E;
+    --text:#FFFFFF; --text2:#EBEBF599; --text3:#EBEBF54D;
+    --linie:#54545899; --fill:#7878805C; --fill2:#78788029; --fill3:#7878801F;
+    --leiste:rgba(22,22,24,.82);
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--text);
+  font:400 17px/1.3 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  padding-bottom:calc(52px + env(safe-area-inset-bottom));
+  overflow-x:hidden;
+}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+input,select{font:inherit;color:inherit}
+
+/* ---------- Banner ---------- */
+.demo{
+  background:var(--orange); color:#fff; font-size:12px; font-weight:600;
+  text-align:center; padding:calc(5px + env(safe-area-inset-top)) 12px 5px;
+  letter-spacing:.2px; position:sticky; top:0; z-index:40;
+}
+
+/* ---------- Kopf ---------- */
+.kopf{padding:8px 20px 4px}
+.kopf h1{font-size:34px;line-height:1.1;font-weight:700;letter-spacing:-.5px;margin:6px 0 10px}
+.kopfleiste{
+  display:flex;align-items:center;gap:8px;min-height:44px;padding:0 8px;
+  border-bottom:.5px solid var(--linie);background:var(--leiste);
+  backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);
+  position:sticky;top:26px;z-index:30;
+}
+.kopfleiste .mitte{flex:1;text-align:center;font-size:17px;font-weight:600}
+.zurueck{display:flex;align-items:center;gap:3px;color:var(--blau);font-size:17px;padding:6px 8px}
+.zurueck svg{width:11px;height:19px}
+.kopfakt{color:var(--blau);font-size:17px;padding:6px 10px}
+
+/* ---------- Ansichten ---------- */
+.ansicht{display:none;animation:rein .22s ease}
+.ansicht.an{display:block}
+@keyframes rein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.unter{display:none;position:fixed;inset:0;background:var(--bg);z-index:35;overflow-y:auto;
+  padding-bottom:calc(40px + env(safe-area-inset-bottom));animation:schub .28s cubic-bezier(.32,.72,0,1)}
+.unter.an{display:block}
+@keyframes schub{from{transform:translateX(100%)}to{transform:none}}
+
+/* ---------- Karten ---------- */
+.inhalt{padding:0 16px 28px}
+.karte{background:var(--karte);border-radius:16px;padding:16px;margin-bottom:14px}
+.kartentitel{
+  font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;
+  color:var(--text2);margin-bottom:10px;display:flex;align-items:center;gap:6px
+}
+
+/* ---------- Gruppierte Liste ---------- */
+.gruppe{margin:0 0 26px}
+.gruppe>h3{font-size:13px;font-weight:400;text-transform:uppercase;letter-spacing:.4px;
+  color:var(--text2);margin:0 0 7px;padding:0 16px}
+.gruppe>.fuss{font-size:13px;color:var(--text2);margin:7px 0 0;padding:0 16px;line-height:1.35}
+.liste{background:var(--karte);border-radius:10px;overflow:hidden;margin:0 16px}
+.z{display:flex;align-items:center;gap:12px;padding:11px 16px;min-height:44px;
+  border-top:.5px solid var(--linie);text-align:left;width:100%}
+.z:first-child{border-top:0}
+.z .wert{margin-left:auto;color:var(--text2);font-variant-numeric:tabular-nums;text-align:right}
+.z.tipp .wert{color:var(--text3)}
+.z .pfeil{width:8px;height:14px;flex:none;opacity:.3;margin-left:auto}
+.z .wert+.pfeil{margin-left:6px}
+.sym{width:29px;height:29px;border-radius:7px;display:grid;place-items:center;flex:none;
+  color:#fff;font-size:15px;font-weight:600}
+.z .blau{color:var(--blau)}
+
+/* ---------- Kennzahlen ---------- */
+.kz{display:flex;gap:4px}
+.kz>div{flex:1;min-width:0}
+.kz .l{font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px;margin-bottom:2px}
+.kz .v{font-size:22px;font-weight:600;letter-spacing:-.3px;font-variant-numeric:tabular-nums;
+  font-family:-apple-system,"SF Pro Rounded",system-ui}
+.gr{color:var(--gruen)} .or{color:var(--orange)} .ro{color:var(--rot)} .bl{color:var(--blau)}
+
+/* ---------- Uhr ---------- */
+.uhr{display:flex;align-items:baseline;gap:7px;margin-bottom:13px}
+.uhr b{font-size:46px;font-weight:600;letter-spacing:-1.5px;line-height:1;
+  font-variant-numeric:tabular-nums;font-family:-apple-system,"SF Pro Rounded",system-ui}
+.uhr span{font-size:16px;color:var(--text2)}
+.balken{height:8px;border-radius:4px;background:var(--fill2);overflow:hidden;margin-bottom:14px}
+.balken i{display:block;height:100%;border-radius:4px;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--blau) 72%,transparent),var(--blau));
+  transition:width .5s ease}
+
+/* ---------- Knöpfe ---------- */
+.knoepfe{display:flex;gap:9px;margin-top:14px}
+.kn{flex:1;min-height:48px;border-radius:12px;font-size:17px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity .15s}
+.kn:active{opacity:.55}
+.kn.voll{background:var(--blau);color:#fff}
+.kn.rand{background:var(--fill3);color:var(--blau)}
+.kn.rot{background:var(--fill3);color:var(--rot)}
+.schnell{display:flex;gap:10px;margin-bottom:14px}
+.schnell button{flex:1;background:var(--karte);border-radius:16px;padding:13px 6px;
+  display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;font-weight:500}
+.schnell button:active{opacity:.6}
+.schnell .i{font-size:21px;line-height:1}
+
+/* ---------- Aufgaben ---------- */
+.auf{display:flex;gap:11px;padding:8px 0;border-top:.5px solid var(--linie);align-items:flex-start}
+.auf:first-of-type{border-top:0}
+.hak{width:22px;height:22px;border-radius:50%;border:1.6px solid var(--text3);flex:none;margin-top:1px;
+  display:grid;place-items:center;font-size:13px;color:#fff;transition:.18s}
+.hak.ja{background:var(--gruen);border-color:var(--gruen)}
+.auf .t{font-size:15px;line-height:1.3}
+.auf.weg .t{text-decoration:line-through;color:var(--text2)}
+.auf .m{font-size:12px;color:var(--text2);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap}
+.auf .m .spaet{color:var(--rot)}
+
+/* ---------- Palettenrechner ---------- */
+.erg{display:flex;gap:11px;align-items:flex-start;margin-bottom:14px}
+.erg .ik{font-size:30px;line-height:1;flex:none}
+.erg h4{margin:0 0 2px;font-size:17px;font-weight:600}
+.erg p{margin:0;font-size:15px;color:var(--text2);line-height:1.3}
+.reihe{margin-bottom:7px}
+.reihe .k{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:3px}
+.gitter{display:flex;gap:2px}
+.gitter i{flex:1;height:17px;border-radius:2.5px;background:var(--fill2);transition:background .3s}
+.gitter i.v{background:var(--blau)}
+.gitter i.n{background:var(--orange)}
+.gitter i.tot{background:var(--fill3)}
+.hinw{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--text2);
+  line-height:1.35;margin-top:9px}
+.hinw .i{flex:none;opacity:.6}
+.pos{padding:11px 16px;border-top:.5px solid var(--linie)}
+.pos:first-child{border-top:0}
+.pos .r1{display:flex;gap:10px;align-items:center;margin-bottom:9px}
+.pos .r1 input[type=text]{flex:1;min-width:0;background:none;border:0;font-size:16px;padding:2px 0}
+.pos .r1 input::placeholder{color:var(--text3)}
+.step{display:flex;align-items:center;background:var(--fill2);border-radius:8px;overflow:hidden;flex:none}
+.step button{width:34px;height:31px;font-size:18px;color:var(--blau);display:grid;place-items:center}
+.step button:active{background:var(--fill)}
+.step span{min-width:34px;text-align:center;font-size:16px;font-variant-numeric:tabular-nums;font-weight:500}
+.pos .r2{display:flex;gap:10px;align-items:center}
+.seg{display:flex;background:var(--fill2);border-radius:8px;padding:2px;flex:none}
+.seg button{padding:5px 13px;border-radius:6.5px;font-size:13px;font-weight:500;color:var(--text)}
+.seg button.an{background:var(--karte2);box-shadow:0 1px 3px #0000001f;font-weight:600}
+@media (prefers-color-scheme: dark){.seg button.an{background:#636366;box-shadow:none}}
+.schalter{margin-left:auto;display:flex;align-items:center;gap:9px;font-size:14px;color:var(--text2)}
+.sw{width:50px;height:30px;border-radius:15px;background:var(--fill);position:relative;
+  flex:none;transition:background .22s}
+.sw.an{background:var(--gruen)}
+.sw i{position:absolute;top:2px;left:2px;width:26px;height:26px;border-radius:50%;background:#fff;
+  box-shadow:0 2px 4px #00000026;transition:transform .22s}
+.sw.an i{transform:translateX(20px)}
+
+/* ---------- Fotos ---------- */
+.foto{position:relative;border-radius:10px;overflow:hidden;flex:none}
+.foto svg{display:block}
+.stempel{position:absolute;left:0;right:0;bottom:0;padding:5px 6px 4px;
+  background:linear-gradient(transparent,#000000b0);color:#fff;
+  font-size:7px;line-height:1.35;font-weight:600;text-shadow:0 1px 2px #000000d9;
+  font-variant-numeric:tabular-nums}
+.foto.gr .stempel{font-size:11px;padding:12px 13px 10px}
+
+/* ---------- Fehlerbalken ---------- */
+.fb{padding:9px 0}
+.fb .k{display:flex;justify-content:space-between;gap:10px;font-size:15px;margin-bottom:5px}
+.fb .k span{color:var(--text2);font-size:13px;font-variant-numeric:tabular-nums;flex:none}
+.fb .s{height:6px;border-radius:3px;background:var(--fill2);overflow:hidden}
+.fb .s i{display:block;height:100%;border-radius:3px;background:var(--blau)}
+
+/* ---------- Mail-Blatt ---------- */
+.blattbg{position:fixed;inset:0;background:#00000059;z-index:50;opacity:0;pointer-events:none;
+  transition:opacity .3s}
+.blattbg.an{opacity:1;pointer-events:auto}
+.blatt{position:fixed;left:0;right:0;bottom:0;top:28px;background:var(--bg);
+  border-radius:12px 12px 0 0;z-index:51;transform:translateY(100%);
+  transition:transform .34s cubic-bezier(.32,.72,0,1);display:flex;flex-direction:column;overflow:hidden}
+.blatt.an{transform:none}
+.blattkopf{display:flex;align-items:center;min-height:50px;padding:0 8px;flex:none;
+  border-bottom:.5px solid var(--linie);background:var(--leiste);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+.blattkopf .t{flex:1;text-align:center;font-size:17px;font-weight:600}
+.blattkopf button{color:var(--blau);font-size:17px;padding:8px 10px}
+.blattkopf button.stark{font-weight:600}
+.blattkoerper{flex:1;overflow-y:auto;padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+.mz{display:flex;gap:8px;padding:10px 16px;border-bottom:.5px solid var(--linie);font-size:15px}
+.mz .l{color:var(--text2);flex:none;min-width:58px}
+.mz .v{flex:1;word-break:break-word}
+.mz .v.leer{color:var(--text3)}
+.mkoerper{padding:14px 16px;font-size:15px;line-height:1.45;white-space:pre-wrap;
+  font-family:-apple-system,BlinkMacSystemFont,system-ui}
+.anh{display:flex;gap:10px;flex-wrap:wrap;padding:12px 16px;border-top:.5px solid var(--linie)}
+.anh .a{background:var(--karte);border-radius:9px;padding:9px 11px;display:flex;gap:8px;
+  align-items:center;font-size:13px;max-width:100%}
+.anh .a .i{font-size:19px;flex:none}
+.anh .a .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.anh .a .g{color:var(--text2);font-size:11px}
+
+/* ---------- Reiter ---------- */
+.reiter{
+  position:fixed;left:0;right:0;bottom:0;z-index:45;display:flex;
+  padding-bottom:env(safe-area-inset-bottom);
+  background:var(--leiste);backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border-top:.5px solid var(--linie)
+}
+.reiter button{flex:1;padding:6px 0 4px;display:flex;flex-direction:column;align-items:center;gap:2px;
+  color:var(--grau);font-size:10px;font-weight:500;letter-spacing:.1px}
+.reiter button.an{color:var(--blau)}
+.reiter .i{font-size:22px;line-height:1}
+.toast{position:fixed;left:50%;bottom:calc(72px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(8px);
+  background:#000000e0;color:#fff;font-size:14px;padding:10px 18px;border-radius:20px;z-index:60;
+  opacity:0;pointer-events:none;transition:.26s;max-width:82vw;text-align:center}
+@media (prefers-color-scheme: dark){.toast{background:#fffffff0;color:#000}}
+.toast.an{opacity:1;transform:translateX(-50%)}
+.mono{font-variant-numeric:tabular-nums}
+.klein{font-size:13px;color:var(--text2);line-height:1.4}
+</style>
+</head>
+<body>
+<div class="demo">PROTOTYP · Beispieldaten · Donnerstag 14:12</div>
+
+<!-- ============ START ============ -->
+<section class="ansicht an" id="v-start">
+  <div class="kopf"><h1>Guten Tag</h1></div>
+  <div class="inhalt">
+
+    <div class="karte">
+      <div class="kartentitel"><span id="st-sym">⏱</span><span id="st-text">Arbeitszeit läuft</span></div>
+      <div class="uhr"><b id="st-zeit">7:04</b><span>von 8:30</span></div>
+      <div class="balken"><i id="st-balken" style="width:83%"></i></div>
+      <div class="kz">
+        <div><div class="l">± Heute</div><div class="v or" id="st-heute">-1:26</div></div>
+        <div><div class="l">Konto</div><div class="v gr">+12:35</div></div>
+        <div><div class="l">Feierabend</div><div class="v">15:38</div></div>
+      </div>
+      <div class="knoepfe" id="st-knoepfe"></div>
+    </div>
+
+    <div class="schnell">
+      <button onclick="toast('Im Prototyp nur Ansicht — in der App öffnet sich das Formular.')">
+        <span class="i">⚠️</span>Fehler</button>
+      <button onclick="toast('Im Prototyp nur Ansicht — in der App öffnet sich das Formular.')">
+        <span class="i">✏️</span>Notiz</button>
+      <button onclick="zeig('schaden')"><span class="i">📷</span>Schaden</button>
+    </div>
+
+    <div class="karte">
+      <div class="kartentitel">📋 Offen</div>
+      <div id="aufgabenliste"></div>
+    </div>
+
+    <div class="karte">
+      <div class="kartentitel">👟 Bewegung</div>
+      <div class="kz">
+        <div><div class="l">Schicht</div><div class="v" id="bw-schicht">6.412</div></div>
+        <div><div class="l">Heute</div><div class="v">7.038</div></div>
+        <div><div class="l">Route</div><div class="v">1,8 km</div></div>
+      </div>
+    </div>
+
+    <div class="karte">
+      <div class="kartentitel">📷 Letzte Schäden</div>
+      <div id="schaedenkurz"></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============ ZEIT ============ -->
+<section class="ansicht" id="v-zeit">
+  <div class="kopf"><h1>Zeit</h1></div>
+
+  <div class="gruppe">
+    <h3>Überblick</h3>
+    <div class="liste"><div class="z" style="padding:14px 16px">
+      <div class="kz" style="width:100%">
+        <div><div class="l">Diese Woche</div><div class="v" id="wo-ist">25:19</div></div>
+        <div><div class="l">Woche ±</div><div class="v or" id="wo-saldo">-0:41</div></div>
+        <div><div class="l">Konto</div><div class="v gr">+12:35</div></div>
+      </div>
+    </div></div>
+    <p class="fuss">Soll: Mo–Do 8:30, Fr 6:00. Frühstückspause 9:30–9:40 und Mittagspause
+      12:30–13:00 werden automatisch abgezogen.</p>
+  </div>
+
+  <div class="gruppe">
+    <h3 style="display:flex;justify-content:space-between"><span>16.11.2026 – 22.11.2026</span>
+      <span class="mono">25:19</span></h3>
+    <div class="liste" id="schichtliste"></div>
+    <p class="fuss">📍 heißt: automatisch per Standort erkannt. Antippen zum Korrigieren.</p>
+  </div>
+
+  <div class="gruppe">
+    <h3 style="display:flex;justify-content:space-between"><span>09.11.2026 – 15.11.2026</span>
+      <span class="mono">39:12</span></h3>
+    <div class="liste">
+      <div class="z" style="opacity:.6"><div class="klein">4 Schichten · zusammengeklappt</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LADEN ============ -->
+<section class="ansicht" id="v-laden">
+  <div class="kopf"><h1>Laden</h1></div>
+
+  <div class="gruppe">
+    <div class="liste"><div class="z" style="display:block;padding:16px">
+      <div class="erg">
+        <div class="ik" id="pr-ik">✅</div>
+        <div><h4 id="pr-kopf">Passt in den Zug</h4><p id="pr-unter"></p></div>
+      </div>
+      <div class="reihe">
+        <div class="k"><span>2. Stock</span><span id="pr-obenz">0 / 36</span></div>
+        <div class="gitter" id="pr-oben"></div>
+      </div>
+      <div class="reihe">
+        <div class="k"><span>Boden</span><span id="pr-bodenz">35 / 36</span></div>
+        <div class="gitter" id="pr-boden"></div>
+      </div>
+      <div class="kz" style="margin-top:14px">
+        <div><div class="l">Gebraucht</div><div class="v" id="pr-brauch">35</div></div>
+        <div><div class="l">Vorhanden</div><div class="v">72</div></div>
+        <div><div class="l" id="pr-restl">Noch frei</div><div class="v" id="pr-rest">37</div></div>
+      </div>
+      <div id="pr-hinweise"></div>
+    </div></div>
+  </div>
+
+  <div class="gruppe">
+    <h3>Was muss raus?</h3>
+    <div class="liste" id="poslist"></div>
+    <div class="liste" style="margin-top:9px">
+      <button class="z blau" onclick="posNeu()">＋&nbsp; Position hinzufügen</button>
+    </div>
+    <p class="fuss">Stapelbar heißt: es darf etwas darauf gestellt werden. Eine nicht
+      stapelbare Palette belegt einen Bodenplatz und blockiert den Platz darüber.<br><br>
+      <b>Das hier rechnet echt</b> — dieselbe Logik wie in der App. Dreh an den Zahlen
+      und prüfe, ob es mit dem übereinstimmt, was im Hof passiert.</p>
+  </div>
+
+  <div class="gruppe">
+    <h3>Der Zug</h3>
+    <div class="liste">
+      <div class="z">Koffer<span class="wert">2</span></div>
+      <div class="z">Bodenplätze je Koffer<span class="wert">18</span></div>
+      <div class="z">Reihen je Koffer<span class="wert">6 × 3 nebeneinander</span></div>
+      <div class="z">Stellplätze gesamt<span class="wert">72</span></div>
+    </div>
+    <p class="fuss">LKW und Anhänger sind baugleich: 18 Plätze am Boden, 18 im zweiten Stock,
+      also 36 je Koffer und 72 im ganzen Zug.</p>
+  </div>
+</section>
+
+<!-- ============ SCHÄDEN ============ -->
+<section class="ansicht" id="v-schaden">
+  <div class="kopf"><h1>Schäden</h1></div>
+  <div class="gruppe">
+    <div class="liste" id="schaedenliste"></div>
+    <p class="fuss">Datum, Uhrzeit und Ort stehen im Bild selbst — ein Reklamationsfoto
+      ohne Zeitstempel ist im Streitfall wenig wert.</p>
+  </div>
+</section>
+
+<!-- ============ MEHR ============ -->
+<section class="ansicht" id="v-mehr">
+  <div class="kopf"><h1>Mehr</h1></div>
+  <div class="gruppe">
+    <div class="liste">
+      <button class="z" onclick="unter('wochenbericht')">
+        <span class="sym" style="background:var(--blau)">✉</span>Wochenbericht
+        <span class="wert">Fr 13:00</span><svg class="pfeil" viewBox="0 0 8 14"><path d="M1 1l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></button>
+    </div>
+  </div>
+  <div class="gruppe">
+    <div class="liste">
+      <button class="z" onclick="toast('Aufgaben und Notizen — im Prototyp auf der Startseite zu sehen.')">
+        <span class="sym" style="background:var(--orange)">✓</span>Aufgaben und Notizen
+        <svg class="pfeil" viewBox="0 0 8 14"><path d="M1 1l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></button>
+      <button class="z" onclick="unter('fehlerbuch')">
+        <span class="sym" style="background:var(--rot)">⚠</span>Fehlerprotokollbuch
+        <svg class="pfeil" viewBox="0 0 8 14"><path d="M1 1l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></button>
+      <button class="z" onclick="unter('bewegung')">
+        <span class="sym" style="background:var(--gruen)">👟</span>Bewegung und Route
+        <svg class="pfeil" viewBox="0 0 8 14"><path d="M1 1l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></button>
+    </div>
+  </div>
+  <div class="gruppe">
+    <div class="liste">
+      <button class="z" onclick="unter('einstellungen')">
+        <span class="sym" style="background:var(--grau)">⚙</span>Einstellungen
+        <svg class="pfeil" viewBox="0 0 8 14"><path d="M1 1l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></button>
+    </div>
+    <p class="fuss">Alles bleibt auf dem iPhone. Kein Server, keine iCloud-Synchronisierung.
+      Was rausgeht, geht über deine eigene Mail-App und nur, wenn du auf Senden tippst.</p>
+  </div>
+</section>
+
+<!-- ============ UNTERSEITEN ============ -->
+<div class="unter" id="u-wochenbericht">
+  <div class="kopfleiste" style="top:0">
+    <button class="zurueck" onclick="zu()"><svg viewBox="0 0 11 19"><path d="M9.5 1.5L2 9.5l7.5 8" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Mehr</button>
+    <div class="mitte">Wochenbericht</div><div style="width:68px"></div>
+  </div>
+  <div class="gruppe" style="margin-top:18px">
+    <div class="liste"><div class="z" style="padding:8px">
+      <div class="seg" style="width:100%">
+        <button class="an" style="flex:1">Diese Woche</button>
+        <button style="flex:1" onclick="toast('Im Prototyp ist nur die aktuelle Woche gefüllt.')">Letzte</button>
+        <button style="flex:1" onclick="toast('Im Prototyp ist nur die aktuelle Woche gefüllt.')">Vorletzte</button>
+      </div>
+    </div></div>
+  </div>
+  <div class="gruppe">
+    <h3>Zeit</h3>
+    <div class="liste">
+      <div class="z" style="padding:14px 16px"><div class="kz" style="width:100%">
+        <div><div class="l">Gearbeitet</div><div class="v">25:19</div></div>
+        <div><div class="l">Soll</div><div class="v">26:00</div></div>
+        <div><div class="l">Saldo</div><div class="v or">-0:41</div></div>
+      </div></div>
+      <div class="z">Zeitraum<span class="wert">16.11. – 22.11.2026</span></div>
+      <div class="z">Schichten<span class="wert">3</span></div>
+      <div class="z">Schritte<span class="wert">19.284</span></div>
+    </div>
+  </div>
+  <div class="gruppe">
+    <h3>Termine nächste Woche (2)</h3>
+    <div class="liste">
+      <div class="z">Palettenbestand zählen<span class="wert">Montag, 07:00</span></div>
+      <div class="z">Monatsabschluss Versand<span class="wert">Montag, 09:00</span></div>
+    </div>
+  </div>
+  <div class="gruppe">
+    <h3>Offen (3)</h3>
+    <div class="liste">
+      <div class="z">Spanngurte nachbestellen<span class="wert" style="color:var(--rot)">überfällig</span></div>
+      <div class="z">Neuen Kollegen einweisen<span class="wert">—</span></div>
+      <div class="z">Stapler-Prüfung Termin holen<span class="wert">—</span></div>
+    </div>
+  </div>
+  <div class="gruppe">
+    <h3>Fehler dieser Woche (6)</h3>
+    <div class="liste">
+      <div class="z">Lieferschein fehlt oder falsch<span class="wert">3×</span></div>
+      <div class="z">Ladungssicherung mangelhaft<span class="wert">2×</span></div>
+      <div class="z">Menge falsch<span class="wert">1×</span></div>
+    </div>
+  </div>
+  <div class="gruppe">
+    <h3>Schäden dieser Woche (2)</h3>
+    <div class="liste">
+      <div class="z">Palette Jungheinrich beschädigt<span class="wert">2 Fotos</span></div>
+      <div class="z">Karton eingedrückt, Linde<span class="wert">1 Foto</span></div>
+    </div>
+  </div>
+  <div class="gruppe">
+    <div class="liste">
+      <button class="z blau" onclick="mailWoche()">✈️&nbsp; Als Mail senden</button>
+      <button class="z blau" onclick="toast('Teilen-Dialog — im Prototyp nicht verfügbar.')">📄&nbsp; Nur PDF teilen</button>
+    </div>
+    <p class="fuss">Mail wird fertig geöffnet, Bericht als PDF im Anhang. Senden bestätigst
+      du selbst — iOS lässt das keine App im Hintergrund.</p>
+  </div>
+</div>
+
+<div class="unter" id="u-fehlerbuch">
+  <div class="kopfleiste" style="top:0">
+    <button class="zurueck" onclick="zu()"><svg viewBox="0 0 11 19"><path d="M9.5 1.5L2 9.5l7.5 8" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Mehr</button>
+    <div class="mitte">Auswertung</div><div style="width:68px"></div>
+  </div>
+  <div class="gruppe" style="margin-top:18px">
+    <div class="liste">
+      <div class="z" style="padding:14px 16px"><div class="kz" style="width:100%">
+        <div><div class="l">Fehler</div><div class="v">23</div></div>
+        <div><div class="l">Kategorien</div><div class="v">6</div></div>
+        <div><div class="l">Häufigster</div><div class="v">8</div></div>
+      </div></div>
+    </div>
+  </div>
+  <div class="gruppe">
+    <h3>Größter Hebel</h3>
+    <div class="liste"><div class="z" style="display:block;padding:14px 16px">
+      <div style="font-size:17px;font-weight:600;margin-bottom:4px">Lieferschein fehlt oder falsch</div>
+      <div class="klein">8 von 23 Fällen, das sind 35 %. Da lohnt es sich, im Team genauer
+        hinzuschauen.</div>
+    </div></div>
+  </div>
+  <div class="gruppe">
+    <h3>Häufigkeit · 2026-Q4</h3>
+    <div class="liste" style="padding:4px 16px" id="fehlerbalken"></div>
+  </div>
+  <div class="gruppe">
+    <div class="liste">
+      <button class="z blau" onclick="toast('PDF-Auswertung — im Prototyp nicht verfügbar.')">📄&nbsp; Auswertung als PDF teilen</button>
+    </div>
+    <p class="fuss">Die Auswertung rechnet jedes Quartal von selbst durch. Am 1. Januar,
+      April, Juli und Oktober kommt eine Erinnerung.</p>
+  </div>
+</div>
+
+<div class="unter" id="u-bewegung">
+  <div class="kopfleiste" style="top:0">
+    <button class="zurueck" onclick="zu()"><svg viewBox="0 0 11 19"><path d="M9.5 1.5L2 9.5l7.5 8" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Mehr</button>
+    <div class="mitte">Bewegung</div><div style="width:68px"></div>
+  </div>
+  <div class="gruppe" style="margin-top:18px">
+    <div class="liste">
+      <div class="z" style="padding:14px 16px"><div class="kz" style="width:100%">
+        <div><div class="l">Schritte heute</div><div class="v">7.038</div></div>
+        <div><div class="l">Strecke</div><div class="v">1,8 km</div></div>
+        <div><div class="l">Punkte</div><div class="v">47</div></div>
+      </div></div>
+    </div>
+    <p class="fuss">In der Halle ist GPS praktisch unbrauchbar. Die Route ist nur im Freien
+      belastbar, drinnen zählt der Schrittzähler weiter.</p>
+  </div>
+  <div class="gruppe">
+    <h3>Route</h3>
+    <div class="liste" style="padding:0;overflow:hidden">
+      <svg viewBox="0 0 340 200" style="display:block;width:100%;height:auto;background:var(--fill3)">
+        <rect x="42" y="36" width="150" height="86" rx="4" fill="var(--fill2)"/>
+        <text x="117" y="84" text-anchor="middle" font-size="11" fill="var(--text3)"
+          font-family="system-ui">Halle (kein GPS)</text>
+        <rect x="214" y="52" width="86" height="54" rx="4" fill="var(--fill2)"/>
+        <text x="257" y="83" text-anchor="middle" font-size="10" fill="var(--text3)"
+          font-family="system-ui">Verladehof</text>
+        <path d="M58 150 L96 148 L140 152 L186 142 L214 128 L248 118 L286 124 L298 150"
+          stroke="#007AFF" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="58" cy="150" r="7" fill="#34C759"/>
+        <circle cx="298" cy="150" r="7" fill="#FF3B30"/>
+        <circle cx="248" cy="118" r="6.5" fill="#FF9500"/>
+        <text x="248" y="106" text-anchor="middle" font-size="10" fill="var(--text2)"
+          font-family="system-ui" font-weight="600">14:30</text>
+      </svg>
+    </div>
+  </div>
+  <div class="gruppe">
+    <h3>Wo war ich?</h3>
+    <div class="liste">
+      <div class="z">Uhrzeit<span class="wert">14:30</span></div>
+      <button class="z blau" onclick="toast('Treffer: 14:31 · 51.39542, 8.57218 (±18 m)')">🔍&nbsp; Wo war ich da?</button>
+      <div class="z" style="display:block;padding:12px 16px">
+        <div style="font-size:15px;font-weight:500" class="mono">19.11.2026, 14:31</div>
+        <div class="klein mono">51.39542, 8.57218 (±18 m)</div>
+        <div class="blau" style="font-size:13px;margin-top:4px">↗ In Karten öffnen</div>
+      </div>
+    </div>
+    <p class="fuss">Praktisch, wenn ein Schlüssel oder Scanner liegen geblieben ist.</p>
+  </div>
+</div>
+
+<div class="unter" id="u-einstellungen">
+  <div class="kopfleiste" style="top:0">
+    <button class="zurueck" onclick="zu()"><svg viewBox="0 0 11 19"><path d="M9.5 1.5L2 9.5l7.5 8" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Mehr</button>
+    <div class="mitte">Einstellungen</div><div style="width:68px"></div>
+  </div>
+  <div class="gruppe" style="margin-top:18px">
+    <h3>Firmengelände</h3>
+    <div class="liste">
+      <div class="z">Name<span class="wert">IEB Brilon</span></div>
+      <div class="z">Standort<span class="wert mono">51.39518, 8.57104</span></div>
+      <div class="z">Radius<span class="wert">150 m</span></div>
+      <button class="z blau">📍&nbsp; Standort neu setzen</button>
+    </div>
+    <p class="fuss">Einmal auf dem Hof stehen und tippen. Danach startet die Arbeitszeit beim
+      Betreten und endet beim Verlassen.</p>
+  </div>
+  <div class="gruppe">
+    <h3>Zeiterfassung</h3>
+    <div class="liste">
+      <div class="z">Automatisch per Standort<div class="sw an" onclick="swUm(this)"><i></i></div></div>
+      <div class="z">Feste Pausen abziehen<div class="sw an" onclick="swUm(this)"><i></i></div></div>
+      <div class="z">Route aufzeichnen<div class="sw an" onclick="swUm(this)"><i></i></div></div>
+      <div class="z">Pause fragen nach<span class="wert">15 Minuten</span></div>
+    </div>
+  </div>
+  <div class="gruppe">
+    <h3>Mailempfänger</h3>
+    <div class="liste">
+      <div class="z">Adresse<input id="mail-an" class="wert" style="background:none;border:0;
+        text-align:right;flex:1;min-width:0" placeholder="freilassen und selbst tippen"></div>
+      <div class="z">Signatur<span class="wert">Enrique Diaz, Versandleiter</span></div>
+    </div>
+    <p class="fuss">Ohne Adresse öffnet die Mail mit leerem An-Feld — Text und Anhänge sind
+      trotzdem fertig, du tippst nur den Empfänger. Hier eintragen und auch das fällt weg.
+      <b>Probier es aus: Adresse eintragen, dann unten eine Schadensmeldung öffnen.</b></p>
+  </div>
+  <div class="gruppe">
+    <h3>Schadensmeldungen</h3>
+    <div class="liste">
+      <div class="z">Nach jedem Schadensfoto<div class="sw an" onclick="swUm(this)"><i></i></div></div>
+    </div>
+    <p class="fuss">Sobald ein Foto gespeichert ist, öffnet sich die Mail: Betreff, Text, alle
+      Fotos und das PDF sind drin.</p>
+  </div>
+  <div class="gruppe">
+    <h3>Wochenbericht</h3>
+    <div class="liste">
+      <div class="z">Wochenbericht erinnern<div class="sw an" onclick="swUm(this)"><i></i></div></div>
+      <div class="z">Tag<span class="wert">Freitag</span></div>
+      <div class="z">Uhrzeit<span class="wert">13:00</span></div>
+      <div class="z">Nächste Erinnerung<span class="wert">Freitag, 20.11.2026, 13:00</span></div>
+    </div>
+    <p class="fuss">Voreinstellung Freitag 13:00, dann ist die Woche komplett.</p>
+  </div>
+  <div class="gruppe">
+    <h3>Arbeitszeiten</h3>
+    <div class="liste">
+      <div class="z">Mo – Do<span class="wert">6:30 – 15:40</span></div>
+      <div class="z">Freitag<span class="wert">6:30 – 12:40</span></div>
+      <div class="z">Frühstück<span class="wert">9:30 – 9:40</span></div>
+      <div class="z">Mittag (Mo–Do)<span class="wert">12:30 – 13:00</span></div>
+      <div class="z">Soll Mo – Do<span class="wert">8:30</span></div>
+      <div class="z">Soll Freitag<span class="wert">6:00</span></div>
+      <div class="z">Soll Woche<span class="wert">40:00</span></div>
+    </div>
+  </div>
+  <div class="gruppe">
+    <h3>Daten</h3>
+    <div class="liste">
+      <div class="z">Speicherort<span class="wert">nur dieses iPhone</span></div>
+      <div class="z">Synchronisierung<span class="wert">keine</span></div>
+      <div class="z">Version<span class="wert">1.0 (1)</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MAIL ============ -->
+<div class="blattbg" id="blattbg" onclick="mailZu()"></div>
+<div class="blatt" id="blatt">
+  <div class="blattkopf">
+    <button onclick="mailZu()">Abbrechen</button>
+    <div class="t">Neue E-Mail</div>
+    <button class="stark" onclick="mailSenden()">Senden</button>
+  </div>
+  <div class="blattkoerper">
+    <div class="mz"><span class="l">An:</span><span class="v" id="m-an"></span></div>
+    <div class="mz"><span class="l">Betreff:</span><span class="v" id="m-betreff"></span></div>
+    <div class="mkoerper" id="m-text"></div>
+    <div class="anh" id="m-anhaenge"></div>
+  </div>
+</div>
+
+<!-- ============ REITER ============ -->
+<nav class="reiter" id="reiter"></nav>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ======================= Navigation ======================= */
+const reiter = [
+  ["start","Start","▦"], ["zeit","Zeit","🕐"], ["laden","Laden","📦"],
+  ["schaden","Schäden","📷"], ["mehr","Mehr","⋯"]
+];
+let aktiv = "start";
+
+document.getElementById("reiter").innerHTML = reiter.map(([id,txt,ik]) =>
+  `<button data-id="${id}" onclick="zeig('${id}')">
+     <span class="i">${ik}</span>${txt}</button>`).join("");
+
+function zeig(id){
+  zu();
+  aktiv = id;
+  document.querySelectorAll(".ansicht").forEach(s =>
+    s.classList.toggle("an", s.id === "v-" + id));
+  document.querySelectorAll("#reiter button").forEach(b =>
+    b.classList.toggle("an", b.dataset.id === id));
+  window.scrollTo(0,0);
+}
+function unter(id){
+  const el = document.getElementById("u-"+id);
+  if(el){ el.classList.add("an"); el.scrollTop = 0; }
+}
+function zu(){ document.querySelectorAll(".unter").forEach(u => u.classList.remove("an")); }
+
+let toastTimer;
+function toast(txt){
+  const t = document.getElementById("toast");
+  t.textContent = txt; t.classList.add("an");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("an"), 2600);
+}
+function swUm(el){ el.classList.toggle("an"); }
+
+/* ======================= Zeit ======================= */
+/* Beispieltag: Donnerstag, Kommen 6:28, jetzt 14:12.
+   Anwesend 7:44, minus 10 min Frühstück und 30 min Mittag = 7:04 Arbeitszeit.
+   Soll Donnerstag 8:30. */
+const SOLL_DO = 8*60 + 30;
+let anwesendMin = 7*60 + 44;
+let pausenMin = 40;
+let laeuft = true, inPause = false;
+
+function hm(m){
+  const neg = m < 0; m = Math.abs(Math.round(m));
+  return (neg ? "-" : "") + Math.floor(m/60) + ":" + String(m%60).padStart(2,"0");
+}
+function saldo(m){ return (m > 0 ? "+" : "") + hm(m); }
+
+function zeitZeichnen(){
+  const arbeit = Math.max(0, anwesendMin - pausenMin);
+  const diff = arbeit - SOLL_DO;
+  document.getElementById("st-zeit").textContent = hm(arbeit);
+  document.getElementById("st-balken").style.width =
+    Math.min(100, arbeit / SOLL_DO * 100) + "%";
+  const h = document.getElementById("st-heute");
+  h.textContent = saldo(diff);
+  h.className = "v " + (diff >= 0 ? "gr" : "or");
+
+  document.getElementById("st-text").textContent =
+    inPause ? "Pause läuft" : laeuft ? "Arbeitszeit läuft" : "Feierabend";
+  document.getElementById("st-sym").textContent = inPause ? "⏸" : laeuft ? "⏱" : "🏁";
+
+  const k = document.getElementById("st-knoepfe");
+  if(!laeuft){
+    k.innerHTML = `<button class="kn voll" onclick="kommen()">▶&nbsp; Kommen</button>`;
+  } else if(inPause){
+    k.innerHTML =
+      `<button class="kn voll" onclick="pauseAus()">▶&nbsp; Weiter</button>
+       <button class="kn rot" onclick="gehen()">■&nbsp; Gehen</button>`;
+  } else {
+    k.innerHTML =
+      `<button class="kn rand" onclick="pauseAn()">⏸&nbsp; Pause</button>
+       <button class="kn rot" onclick="gehen()">■&nbsp; Gehen</button>`;
+  }
+  const woche = 17*60 + 35 + arbeit;
+  document.getElementById("wo-ist").textContent = hm(woche);
+  const ws = woche - (SOLL_DO * 3 + SOLL_DO);
+  const wsEl = document.getElementById("wo-saldo");
+  wsEl.textContent = saldo(ws);
+  wsEl.className = "v " + (ws >= 0 ? "gr" : "or");
+  schichtenZeichnen(arbeit);
+}
+
+function kommen(){ laeuft = true; inPause = false; toast("Kommen erfasst."); zeitZeichnen(); }
+function gehen(){
+  laeuft = false; inPause = false;
+  const arbeit = anwesendMin - pausenMin;
+  toast(`Feierabend. ${hm(arbeit)} gearbeitet, ${saldo(arbeit - SOLL_DO)} auf dem Konto.`);
+  zeitZeichnen();
+}
+function pauseAn(){ inPause = true; toast("Pause läuft. Weiter-Knopf beendet sie."); zeitZeichnen(); }
+function pauseAus(){ inPause = false; toast("Weiter geht's."); zeitZeichnen(); }
+
+/* Minutentakt, damit es sich lebendig anfühlt */
+setInterval(() => {
+  if(!laeuft) return;
+  anwesendMin += 1;
+  if(inPause) pausenMin += 1;
+  zeitZeichnen();
+}, 12000);
+
+/* ======================= Schichten ======================= */
+function schichtenZeichnen(arbeitHeute){
+  const s = [
+    {tag:"Donnerstag", d:"19.11.2026", von:"6:28", bis:null, pausen:2,
+     arbeit:arbeitHeute, auto:true},
+    {tag:"Mittwoch", d:"18.11.2026", von:"6:31", bis:"15:44", pausen:2,
+     arbeit:8*60+33, auto:true},
+    {tag:"Dienstag", d:"17.11.2026", von:"6:26", bis:"15:38", pausen:3,
+     arbeit:8*60+22, auto:true},
+    {tag:"Montag", d:"16.11.2026", von:"6:34", bis:"15:12", pausen:2,
+     arbeit:7*60+58, auto:false}
+  ];
+  document.getElementById("schichtliste").innerHTML = s.map(x => {
+    const diff = x.bis ? x.arbeit - SOLL_DO : null;
+    return `<button class="z" onclick="toast('Schicht korrigieren — im Prototyp nur Ansicht.')">
+      <div style="width:76px;flex:none">
+        <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase">${x.tag}</div>
+        <div style="font-size:13px" class="mono">${x.d}</div>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:15px" class="mono">${x.von} → ${
+          x.bis ? x.bis : '<span class="blau">läuft</span>'}</div>
+        <div class="klein">${x.pausen} Pausen · ${x.pausen === 2 ? "40" : "58"} min</div>
+      </div>
+      <div style="text-align:right;flex:none">
+        <div style="font-size:15px;font-weight:600" class="mono">${hm(x.arbeit)}</div>
+        ${diff !== null ? `<div style="font-size:11px" class="mono ${diff>=0?'gr':'or'}">${saldo(diff)}</div>` : ""}
+      </div>
+      ${x.auto ? '<span style="opacity:.3;font-size:11px;flex:none">📍</span>' : '<span style="width:11px;flex:none"></span>'}
+    </button>`;
+  }).join("");
+}
+
+/* ======================= Aufgaben ======================= */
+let aufgaben = [
+  {t:"Spanngurte nachbestellen", m:"18.11.2026, 08:00", spaet:true, weg:false, w:""},
+  {t:"Palettenbestand zählen", m:"23.11.2026, 07:00", spaet:false, weg:false, w:"Jeden Montag"},
+  {t:"Neuen Kollegen einweisen", m:"", spaet:false, weg:false, w:""},
+  {t:"Monatsabschluss Versand", m:"30.11.2026, 09:00", spaet:false, weg:false, w:"Monatsende"}
+];
+function aufgabenZeichnen(){
+  document.getElementById("aufgabenliste").innerHTML = aufgaben.map((a,i) =>
+    `<div class="auf ${a.weg?'weg':''}">
+       <button class="hak ${a.weg?'ja':''}" onclick="hak(${i})">${a.weg?'✓':''}</button>
+       <div style="flex:1;min-width:0">
+         <div class="t">${a.t}</div>
+         <div class="m">
+           ${a.m ? `<span class="${a.spaet && !a.weg ? 'spaet' : ''}">🔔 ${a.m}</span>` : ""}
+           ${a.w ? `<span>🔁 ${a.w}</span>` : ""}
+         </div>
+       </div>
+     </div>`).join("");
+}
+function hak(i){
+  aufgaben[i].weg = !aufgaben[i].weg;
+  if(aufgaben[i].weg && aufgaben[i].w)
+    toast(`Erledigt. Nächste „${aufgaben[i].w}“ wurde angelegt.`);
+  aufgabenZeichnen();
+}
+
+/* ======================= Palettenrechner ======================= */
+/* Gleiche Logik wie Palettenrechner.swift */
+const ZUG = {koffer:2, bodenProKoffer:18, doppelstock:true};
+const SAEULEN = ZUG.koffer * ZUG.bodenProKoffer;         // 36
+const OBEN    = ZUG.doppelstock ? SAEULEN : 0;           // 36
+const GESAMT  = SAEULEN + OBEN;                          // 72
+
+let positionen = [
+  {bez:"Jungheinrich Ladegeräte", anz:24, art:"euro", stapelbar:true},
+  {bez:"Linde Sondergeräte",      anz:8,  art:"euro", stapelbar:false},
+  {bez:"Ersatzteile",             anz:6,  art:"halb", stapelbar:true}
+];
+
+function rechne(){
+  let euroS=0, euroN=0, halbS=0, halbN=0;
+  for(const p of positionen){
+    if(p.anz <= 0) continue;
+    if(p.art === "euro"){ p.stapelbar ? euroS += p.anz : euroN += p.anz; }
+    else                { p.stapelbar ? halbS += p.anz : halbN += p.anz; }
+  }
+  const hinweise = [];
+  const slotsHalbS = Math.ceil(halbS/2);
+  if(halbS % 2 === 1) hinweise.push(["▱","Eine stapelbare Halbpalette bleibt als halber Platz übrig."]);
+  const slotsHalbN = Math.ceil(halbN/2);
+  if(halbN % 2 === 1) hinweise.push(["▱","Eine nicht stapelbare Halbpalette bleibt als halber Platz übrig."]);
+
+  const bedarfS = euroS + slotsHalbS;
+  const bedarfN = euroN + slotsHalbN;
+
+  // Stapelbares zuerst auf den Boden, nur darauf ist der 2. Stock nutzbar
+  const bodenS = Math.min(bedarfS, SAEULEN);
+  const bodenN = Math.min(bedarfN, SAEULEN - bodenS);
+  const obenNutzbar = ZUG.doppelstock ? bodenS : 0;
+  const rest = (bedarfS - bodenS) + (bedarfN - bodenN);
+  const obenBelegt = Math.min(rest, obenNutzbar);
+  const ueberhang = Math.max(0, rest - obenBelegt);
+
+  const bodenBelegt = bodenS + bodenN;
+  const untergebracht = bodenBelegt + obenBelegt;
+  const bodenFrei = Math.max(0, SAEULEN - bodenBelegt);
+  const obenFrei = Math.max(0, obenNutzbar - obenBelegt);
+
+  return {bedarfS, bedarfN, bodenS, bodenN, obenBelegt, ueberhang, hinweise,
+          bodenBelegt, untergebracht, bodenFrei, obenFrei, obenNutzbar,
+          benoetigt: bedarfS + bedarfN,
+          blockiert: ZUG.doppelstock ? bodenN : 0,
+          nochStapelbar: bodenFrei * (ZUG.doppelstock ? 2 : 1) + obenFrei,
+          nochNicht: bodenFrei + obenFrei,
+          passt: ueberhang === 0};
+}
+
+function gitter(el, belegt, nichtStapelbar, nutzbar, gesamt){
+  el.innerHTML = Array.from({length: gesamt}, (_,i) => {
+    if(i < belegt)
+      return (nichtStapelbar > 0 && i >= belegt - nichtStapelbar) ? '<i class="n"></i>' : '<i class="v"></i>';
+    if(i >= nutzbar) return '<i class="tot"></i>';
+    return "<i></i>";
+  }).join("");
+}
+
+function rechnerZeichnen(){
+  const r = rechne();
+  document.getElementById("pr-ik").textContent = r.benoetigt === 0 ? "📦" : r.passt ? "✅" : "⚠️";
+  document.getElementById("pr-kopf").textContent =
+    r.benoetigt === 0 ? "Noch nichts eingetragen" : r.passt ? "Passt in den Zug" : "Passt nicht";
+
+  const perKoffer = [Math.ceil(r.untergebracht/2), Math.floor(r.untergebracht/2)];
+  document.getElementById("pr-unter").textContent = r.benoetigt === 0
+    ? `${GESAMT} Stellplätze stehen bereit.`
+    : `${r.untergebracht} Stellplätze · ${perKoffer[0]} im LKW, ${perKoffer[1]} im Anhänger`;
+
+  gitter(document.getElementById("pr-oben"), r.obenBelegt, 0, r.obenNutzbar, OBEN);
+  gitter(document.getElementById("pr-boden"), r.bodenBelegt, r.bodenN, SAEULEN, SAEULEN);
+  document.getElementById("pr-obenz").textContent  = `${r.obenBelegt} / ${OBEN}`;
+  document.getElementById("pr-bodenz").textContent = `${r.bodenBelegt} / ${SAEULEN}`;
+
+  document.getElementById("pr-brauch").textContent = r.benoetigt;
+  document.getElementById("pr-restl").textContent = r.passt ? "Noch frei" : "Zu viel";
+  const restEl = document.getElementById("pr-rest");
+  restEl.textContent = r.passt ? (GESAMT - r.untergebracht) : r.ueberhang;
+  restEl.className = "v " + (r.passt ? "" : "or");
+
+  const h = [];
+  if(!r.passt) h.push(["🚛", `${r.ueberhang} Stellplätze bleiben stehen. Entweder eine zweite Tour, oder nicht stapelbare Ware umpacken.`]);
+  if(r.blockiert > 0) h.push(["🚫", `${r.blockiert} Plätze im zweiten Stock sind blockiert, weil darunter nicht stapelbare Ware steht.`]);
+  h.push(...r.hinweise);
+  if(r.passt && r.benoetigt > 0)
+    h.push(["➕", `Es gehen noch ${r.nochStapelbar} stapelbare oder ${r.nochNicht} nicht stapelbare Paletten mit.`]);
+  document.getElementById("pr-hinweise").innerHTML = h.map(([i,t]) =>
+    `<div class="hinw"><span class="i">${i}</span><span>${t}</span></div>`).join("");
+}
+
+function posZeichnen(){
+  document.getElementById("poslist").innerHTML = positionen.map((p,i) =>
+    `<div class="pos">
+       <div class="r1">
+         <input type="text" value="${p.bez.replace(/"/g,"&quot;")}"
+           placeholder="Bezeichnung" oninput="positionen[${i}].bez=this.value">
+         <div class="step">
+           <button onclick="posAnz(${i},-1)">−</button>
+           <span id="anz-${i}">${p.anz}</span>
+           <button onclick="posAnz(${i},1)">＋</button>
+         </div>
+       </div>
+       <div class="r2">
+         <div class="seg">
+           <button class="${p.art==='euro'?'an':''}" onclick="posArt(${i},'euro')">Euro</button>
+           <button class="${p.art==='halb'?'an':''}" onclick="posArt(${i},'halb')">Halb</button>
+         </div>
+         <div class="schalter">stapelbar
+           <div class="sw ${p.stapelbar?'an':''}" onclick="posStapel(${i})"><i></i></div>
+         </div>
+       </div>
+     </div>`).join("");
+}
+function posAnz(i,d){
+  positionen[i].anz = Math.max(0, Math.min(200, positionen[i].anz + d));
+  document.getElementById("anz-"+i).textContent = positionen[i].anz;
+  rechnerZeichnen();
+}
+function posArt(i,a){ positionen[i].art = a; posZeichnen(); rechnerZeichnen(); }
+function posStapel(i){ positionen[i].stapelbar = !positionen[i].stapelbar; posZeichnen(); rechnerZeichnen(); }
+function posNeu(){
+  positionen.push({bez:"", anz:1, art:"euro", stapelbar:true});
+  posZeichnen(); rechnerZeichnen();
+}
+</script>
+
+<script>
+/* ======================= Schadensfotos ======================= */
+/* Ein gezeichnetes Foto, damit sichtbar ist, wo der Stempel sitzt
+   und wie er aussieht. In der App ist er echt ins Bild gebrannt. */
+function fotoSVG(w,h,variante){
+  const boden = variante === 1 ? "#6E6A66" : "#5C5954";
+  const karton = variante === 1 ? "#A9834F" : "#9B7A4C";
+  return `<svg viewBox="0 0 160 120" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice">
+    <defs><linearGradient id="g${variante}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8C8A87"/><stop offset="1" stop-color="${boden}"/></linearGradient></defs>
+    <rect width="160" height="120" fill="url(#g${variante})"/>
+    <rect y="74" width="160" height="46" fill="${boden}"/>
+    <rect x="18" y="86" width="124" height="9" fill="#4A463F"/>
+    <rect x="22" y="95" width="10" height="12" fill="#3E3A34"/>
+    <rect x="75" y="95" width="10" height="12" fill="#3E3A34"/>
+    <rect x="128" y="95" width="10" height="12" fill="#3E3A34"/>
+    <rect x="26" y="44" width="52" height="42" fill="${karton}"/>
+    <rect x="26" y="44" width="52" height="5" fill="#00000026"/>
+    <rect x="48" y="44" width="3" height="42" fill="#00000021"/>
+    <rect x="84" y="36" width="54" height="50" fill="${karton}" opacity=".93"/>
+    <rect x="84" y="36" width="54" height="5" fill="#00000026"/>
+    ${variante === 1
+      ? `<path d="M90 50 l16 13 -5 9 14 4" stroke="#2A2622" stroke-width="2.6" fill="none"/>
+         <path d="M30 58 l14 10" stroke="#2A2622" stroke-width="2.2" fill="none"/>`
+      : `<path d="M88 44 q26 7 48 -1 l0 14 q-24 8 -48 1 z" fill="#00000038"/>`}
+    <rect x="98" y="62" width="26" height="15" fill="#F2EFE8" opacity=".9"/>
+    <rect x="100" y="65" width="20" height="2" fill="#555"/>
+    <rect x="100" y="69" width="15" height="2" fill="#555"/>
+  </svg>`;
+}
+
+const schaeden = [
+  {titel:"Palette Jungheinrich beschädigt", spediteur:"DSV", ls:"44871",
+   notiz:"Beim Verladen ist die untere Lage eingedrückt worden. Zwei Ladegeräte betroffen, Kartons sichtbar deformiert.",
+   fotos:[
+     {zeit:"19.11.2026, 09:12", ort:"IEB Brilon", koord:"51.39521, 8.57112", v:1},
+     {zeit:"19.11.2026, 09:14", ort:"IEB Brilon", koord:"51.39519, 8.57108", v:2}
+   ], angelegt:"19.11.2026, 09:12"},
+  {titel:"Karton eingedrückt, Linde", spediteur:"Kühne + Nagel", ls:"44853",
+   notiz:"Oberer Karton auf der Doppelstock-Lage eingedrückt. Vermutlich beim Stapeln.",
+   fotos:[{zeit:"18.11.2026, 13:41", ort:"IEB Brilon", koord:"51.39533, 8.57095", v:2}],
+   angelegt:"18.11.2026, 13:41"}
+];
+
+function schaedenZeichnen(){
+  document.getElementById("schaedenliste").innerHTML = schaeden.map((s,i) =>
+    `<button class="z" onclick="schadenOeffnen(${i})" style="align-items:flex-start">
+       <div class="foto" style="width:54px;height:54px">
+         ${fotoSVG(54,54,s.fotos[0].v)}
+         <div class="stempel" style="font-size:5px;padding:3px 3px 2px">${s.fotos[0].zeit.split(", ")[1]}</div>
+       </div>
+       <div style="flex:1;min-width:0">
+         <div style="font-size:15px;font-weight:500">${s.titel}</div>
+         <div class="klein">${s.angelegt.split(",")[0]} · ${s.fotos.length} Foto${s.fotos.length>1?"s":""} · ${s.spediteur}</div>
+       </div>
+       <svg class="pfeil" viewBox="0 0 8 14"><path d="M1 1l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+     </button>`).join("");
+
+  document.getElementById("schaedenkurz").innerHTML = schaeden.map((s,i) =>
+    `<button class="auf" onclick="schadenOeffnen(${i})" style="width:100%;text-align:left">
+       <div class="foto" style="width:44px;height:44px">${fotoSVG(44,44,s.fotos[0].v)}</div>
+       <div style="flex:1;min-width:0">
+         <div class="t" style="font-size:15px">${s.titel}</div>
+         <div class="klein">${s.fotos.length} Foto${s.fotos.length>1?"s":""} · ${s.angelegt.split(",")[0]}</div>
+       </div>
+       <svg class="pfeil" viewBox="0 0 8 14" style="opacity:.3;width:8px;height:14px"><path d="M1 1l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+     </button>`).join("");
+}
+
+/* Schadensvorgang als Unterseite, zur Laufzeit gebaut */
+function schadenOeffnen(i){
+  const s = schaeden[i];
+  let el = document.getElementById("u-schaden-detail");
+  if(!el){
+    el = document.createElement("div");
+    el.className = "unter"; el.id = "u-schaden-detail";
+    document.body.appendChild(el);
+  }
+  el.innerHTML = `
+    <div class="kopfleiste" style="top:0">
+      <button class="zurueck" onclick="zu()"><svg viewBox="0 0 11 19"><path d="M9.5 1.5L2 9.5l7.5 8" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Schäden</button>
+      <div class="mitte" style="font-size:15px">${s.titel}</div>
+      <button class="kopfakt" onclick="toast('Bearbeiten — im Prototyp nur Ansicht.')">Bearb.</button>
+    </div>
+    <div class="gruppe" style="margin-top:18px">
+      <div class="liste">
+        <div class="z">Spediteur<span class="wert">${s.spediteur}</span></div>
+        <div class="z">Lieferschein<span class="wert mono">${s.ls}</span></div>
+        <div class="z">Angelegt<span class="wert mono">${s.angelegt}</span></div>
+        <div class="z">Abgeschlossen<div class="sw" onclick="swUm(this)"><i></i></div></div>
+        <div class="z" style="display:block;padding:12px 16px"><div class="klein">${s.notiz}</div></div>
+      </div>
+    </div>
+    <div class="gruppe">
+      <div class="liste"><div class="z" style="padding:12px 16px">
+        <div class="knoepfe" style="margin:0;width:100%">
+          <button class="kn voll" onclick="toast('Kamera — im Prototyp nicht verfügbar. In der App wird der Stempel beim Auslösen eingebrannt.')">📷&nbsp; Foto machen</button>
+          <button class="kn rand" style="flex:0 0 58px" onclick="toast('Fotobibliothek — im Prototyp nicht verfügbar.')">🖼</button>
+        </div>
+      </div></div>
+      <p class="fuss">Datum, Uhrzeit und Ort werden unten ins Bild gebrannt, damit das Foto
+        im Streitfall etwas wert ist.</p>
+    </div>
+    <div class="gruppe">
+      <h3>Fotos (${s.fotos.length})</h3>
+      <div class="liste">
+        ${s.fotos.map(f => `
+          <div class="z" style="display:block;padding:12px 16px">
+            <div class="foto gr" style="width:100%;margin-bottom:8px">
+              <div style="width:100%;aspect-ratio:4/3;overflow:hidden">
+                <svg viewBox="0 0 160 120" style="width:100%;height:100%;display:block">
+                  ${fotoSVG(0,0,f.v).replace(/^<svg[^>]*>/,"").replace(/<\/svg>$/,"")}
+                </svg>
+              </div>
+              <div class="stempel">${f.zeit}<br>${f.ort}<br>${f.koord}<br>LS ${s.ls}</div>
+            </div>
+            <div class="klein mono">${f.zeit} · ±12 m</div>
+          </div>`).join("")}
+      </div>
+      <p class="fuss">So sieht der eingebrannte Stempel aus. Er lässt sich nicht
+        nachträglich verschieben oder löschen — das ist der Punkt.</p>
+    </div>
+    <div class="gruppe">
+      <div class="liste">
+        <button class="z blau" onclick="mailSchaden(${i})">✈️&nbsp; ${mailAn() ? "An Arbeitsmail senden" : "Als Mail senden"}</button>
+        <button class="z blau" onclick="toast('PDF-Bericht — im Prototyp nicht verfügbar.')">📄&nbsp; Als PDF teilen</button>
+      </div>
+      <p class="fuss">${mailAn()
+        ? `Nach jedem Foto wird die Mail an ${mailAn()} fertig geöffnet — Fotos und PDF schon dran.`
+        : "Mail wird fertig geöffnet, Fotos und PDF schon dran — nur der Empfänger fehlt. Trag ihn unter Mehr → Einstellungen ein, dann fällt auch das weg."}</p>
+    </div>`;
+  el.classList.add("an"); el.scrollTop = 0;
+}
+
+/* ======================= Mail ======================= */
+function mailAn(){
+  const el = document.getElementById("mail-an");
+  return el ? el.value.trim() : "";
+}
+
+function mailZeigen(an, betreff, text, anhaenge){
+  const anEl = document.getElementById("m-an");
+  anEl.textContent = an || "Empfänger eintippen";
+  anEl.className = "v" + (an ? "" : " leer");
+  document.getElementById("m-betreff").textContent = betreff;
+  document.getElementById("m-text").textContent = text;
+  document.getElementById("m-anhaenge").innerHTML = anhaenge.map(a =>
+    `<div class="a"><span class="i">${a.ik}</span>
+       <div style="min-width:0"><div class="n">${a.name}</div><div class="g">${a.groesse}</div></div>
+     </div>`).join("");
+  document.getElementById("blatt").classList.add("an");
+  document.getElementById("blattbg").classList.add("an");
+}
+function mailZu(){
+  document.getElementById("blatt").classList.remove("an");
+  document.getElementById("blattbg").classList.remove("an");
+}
+function mailSenden(){
+  const an = document.getElementById("m-an").textContent;
+  mailZu();
+  toast(document.getElementById("m-an").className.includes("leer")
+    ? "Im Prototyp wird nichts verschickt. In der App: Empfänger tippen, dann Senden."
+    : "Im Prototyp wird nichts verschickt — in der App geht die Mail an " + an + ".");
+}
+
+function mailSchaden(i){
+  const s = schaeden[i];
+  const z = [
+    "Schadensmeldung aus dem Versand.", "",
+    "Vorgang:      " + s.titel,
+    "Spediteur:    " + s.spediteur,
+    "Lieferschein: " + s.ls,
+    "Erfasst:      " + s.angelegt,
+    "Fotos:        " + s.fotos.length,
+    "Aufgenommen:  " + s.fotos[0].zeit,
+    "Ort:          " + s.fotos[0].ort,
+    "Koordinaten:  " + s.fotos[0].koord,
+    "", "Beschreibung:", s.notiz, "",
+    "Datum, Uhrzeit und Ort stehen in jedem Foto selbst.",
+    "Der vollständige Bericht liegt als PDF im Anhang.",
+    "", "Enrique Diaz, Versandleiter"
+  ].join("\n");
+  const anh = [{ik:"📄", name:`Schadensmeldung ${s.titel}.pdf`, groesse:"PDF · " + (0.4 + s.fotos.length*0.6).toFixed(1) + " MB"}];
+  s.fotos.forEach((f,n) => anh.push({ik:"🖼", name:`Foto ${n+1} ${f.zeit.split(",")[0]}.jpg`, groesse:"JPEG · 0,6 MB"}));
+  mailZeigen(mailAn(), `Schadensmeldung: ${s.titel} (LS ${s.ls})`, z, anh);
+}
+
+function mailWoche(){
+  const z = [
+    "Wochenbericht Versand, 16.11.2026 bis 22.11.2026", "",
+    "ZEIT",
+    "  Gearbeitet:   25:19",
+    "  Soll:         26:00",
+    "  Saldo Woche:  -0:41",
+    "  Konto gesamt: +12:35",
+    "  Schritte:     19284", "",
+    "TERMINE NÄCHSTE WOCHE (2)",
+    "  • Palettenbestand zählen — Montag, 07:00",
+    "  • Monatsabschluss Versand — Montag, 09:00", "",
+    "OFFEN (3)",
+    "  • Spanngurte nachbestellen  [überfällig]",
+    "  • Neuen Kollegen einweisen",
+    "  • Stapler-Prüfung Termin holen", "",
+    "FEHLER DIESER WOCHE (6)",
+    "  3×  Lieferschein fehlt oder falsch",
+    "  2×  Ladungssicherung mangelhaft",
+    "  1×  Menge falsch", "",
+    "SCHÄDEN DIESER WOCHE (2)",
+    "  • Palette Jungheinrich beschädigt — DSV (2 Fotos)",
+    "  • Karton eingedrückt, Linde — Kühne + Nagel (1 Foto)", "",
+    "Einzelheiten im PDF im Anhang.", "",
+    "Enrique Diaz, Versandleiter"
+  ].join("\n");
+  mailZeigen(mailAn(), "Wochenbericht Versand 16.11.–22.11.2026", z,
+    [{ik:"📄", name:"Wochenbericht 16.11.–22.11.2026.pdf", groesse:"PDF · 0,3 MB"}]);
+}
+
+/* ======================= Fehlerbalken ======================= */
+const fehler = [
+  ["Lieferschein fehlt oder falsch", 8],
+  ["Ladungssicherung mangelhaft", 5],
+  ["Menge falsch", 4],
+  ["Palette falsch gepackt", 3],
+  ["Etikett falsch oder fehlt", 2],
+  ["Zu spät fertig", 1]
+];
+function fehlerZeichnen(){
+  const gesamt = fehler.reduce((s,[,n]) => s+n, 0);
+  const max = fehler[0][1];
+  document.getElementById("fehlerbalken").innerHTML = fehler.map(([k,n]) =>
+    `<div class="fb">
+       <div class="k"><span>${k}</span><span>${n} · ${Math.round(n/gesamt*100)} %</span></div>
+       <div class="s"><i style="width:${Math.max(4, n/max*100)}%"></i></div>
+     </div>`).join("");
+}
+
+/* ======================= Start ======================= */
+document.querySelector("#reiter button").classList.add("an");
+zeitZeichnen();
+aufgabenZeichnen();
+posZeichnen();
+rechnerZeichnen();
+schaedenZeichnen();
+fehlerZeichnen();
+
+document.addEventListener("keydown", e => { if(e.key === "Escape"){ mailZu(); zu(); } });
+</script>
+</body>
+</html>
