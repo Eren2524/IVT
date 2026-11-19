@@ -3,28 +3,26 @@ import CoreLocation
 
 // MARK: - Gangart
 
+/// Mehr Stufen braucht es nicht: entweder er geht, oder er steht,
+/// oder das iPhone weiss gerade nichts.
 enum Gangart: String, Codable {
-    case halt, langsam, normal, zuegig
+    case halt, bewegt
     /// Strecke ohne Signal - meist in der Halle
     case luecke
 
     var anzeige: String {
         switch self {
-        case .halt:    return "Gestanden"
-        case .langsam: return "Langsam"
-        case .normal:  return "Normal"
-        case .zuegig:  return "Zügig"
-        case .luecke:  return "Kein Signal"
+        case .halt:   return "Gestanden"
+        case .bewegt: return "Unterwegs"
+        case .luecke: return "Kein Signal"
         }
     }
 
     var symbol: String {
         switch self {
-        case .halt:    return "pause.circle.fill"
-        case .langsam: return "figure.walk"
-        case .normal:  return "figure.walk"
-        case .zuegig:  return "figure.walk.motion"
-        case .luecke:  return "wifi.slash"
+        case .halt:   return "pause.circle.fill"
+        case .bewegt: return "figure.walk"
+        case .luecke: return "wifi.slash"
         }
     }
 }
@@ -40,10 +38,6 @@ struct Wegabschnitt: Identifiable {
     var gangart: Gangart
 
     var dauer: TimeInterval { max(0, bis.timeIntervalSince(von)) }
-    /// Meter je Sekunde
-    var tempo: Double { dauer > 0 ? meter / dauer : 0 }
-    /// km/h, wie es Menschen lesen
-    var kmh: Double { tempo * 3.6 }
 
     var mitte: CLLocationCoordinate2D? {
         guard !koordinaten.isEmpty else { return nil }
@@ -55,14 +49,13 @@ struct Wegabschnitt: Identifiable {
 
 struct Auffaelligkeit: Identifiable {
     enum Art: String {
-        case start, ende, halt, zuegig, aufenthalt, luecke
+        case start, ende, halt, aufenthalt, luecke
 
         var symbol: String {
             switch self {
             case .start:      return "play.circle.fill"
             case .ende:       return "stop.circle.fill"
             case .halt:       return "pause.circle.fill"
-            case .zuegig:     return "hare.fill"
             case .aufenthalt: return "mappin.circle.fill"
             case .luecke:     return "wifi.slash"
             }
@@ -87,7 +80,6 @@ struct Wegbild {
     var gehzeit: TimeInterval = 0
     var standzeit: TimeInterval = 0
     var luecken: TimeInterval = 0
-    var schnellsteKmh: Double = 0
 
     var von: Date? { abschnitte.first?.von }
     var bis: Date? { abschnitte.last?.bis }
@@ -96,12 +88,6 @@ struct Wegbild {
 
     var alleKoordinaten: [CLLocationCoordinate2D] {
         abschnitte.flatMap(\.koordinaten)
-    }
-
-    /// Durchschnittliches Gehtempo, Stillstand herausgerechnet.
-    var schnittKmh: Double {
-        guard gehzeit > 0 else { return 0 }
-        return gesamtMeter / gehzeit * 3.6
     }
 
     /// Wo war ich zu diesem Zeitpunkt? Zwischen den Stuetzpunkten
@@ -142,12 +128,8 @@ struct Wegbild {
 
 enum Wegauswertung {
 
-    /// Tempogrenzen in Metern je Sekunde.
-    /// 0,3 m/s ist Herumstehen, 1,6 m/s sind gut 5,8 km/h - fuer einen
-    /// Gang durch die Halle schon zuegig.
+    /// Unter 0,3 m/s steht er herum statt zu gehen.
     static let grenzeHalt: Double = 0.3
-    static let grenzeLangsam: Double = 0.9
-    static let grenzeZuegig: Double = 1.6
     /// Darueber ist es kein Fussweg mehr, sondern ein GPS-Sprung
     static let grenzeUnsinn: Double = 8.0
 
@@ -163,8 +145,6 @@ enum Wegauswertung {
     static let maxInfopunkte = 14
     /// So lange muss er weg gewesen sein, damit es als neuer Besuch zaehlt.
     static let besuchPauseAb: TimeInterval = 2 * 60
-    /// Ab so viel Strecke am Stueck ist zuegiges Gehen erwaehnenswert.
-    static let zuegigAb: Double = 80
     /// Kantenlaenge der Raster-Zelle fuer Aufenthaltsorte.
     static let zelleMeter: Double = 30
 
@@ -199,12 +179,8 @@ enum Wegauswertung {
                 art = .luecke
             } else if tempo < grenzeHalt {
                 art = .halt
-            } else if tempo < grenzeLangsam {
-                art = .langsam
-            } else if tempo < grenzeZuegig {
-                art = .normal
             } else {
-                art = .zuegig
+                art = .bewegt
             }
 
             stuecke.append(Stueck(von: p.zeit, bis: q.zeit,
@@ -242,9 +218,6 @@ enum Wegauswertung {
             case .halt:   bild.standzeit += a.dauer
             case .luecke: bild.luecken += a.dauer
             default:      bild.gehzeit += a.dauer
-            }
-            if a.gangart != .luecke {
-                bild.schnellsteKmh = max(bild.schnellsteKmh, a.kmh)
             }
         }
 
@@ -296,13 +269,6 @@ enum Wegauswertung {
                     titel: "\(minuten(a.dauer)) gestanden",
                     text: "Von \(a.von.uhrzeit) bis \(a.bis.uhrzeit) kaum bewegt."))
 
-            case .zuegig where a.meter >= zuegigAb:
-                aus.append(Auffaelligkeit(
-                    art: .zuegig, zeit: a.von, dauer: a.dauer, ort: ort,
-                    titel: "Zügig unterwegs",
-                    text: String(format: "%.0f m in %@, rund %.1f km/h.",
-                                 a.meter, minuten(a.dauer), a.kmh)))
-
             case .luecke where a.dauer >= lueckeInfoAb:
                 aus.append(Auffaelligkeit(
                     art: .luecke, zeit: a.von, dauer: a.dauer, ort: ort,
@@ -337,7 +303,6 @@ enum Wegauswertung {
             switch a.art {
             case .aufenthalt: return 100_000 + a.dauer   // sagt am meisten ueber den Tag
             case .luecke:     return  50_000 + a.dauer
-            case .zuegig:     return  20_000 + a.dauer
             case .halt:       return a.dauer             // nur die laengsten
             case .start, .ende: return .greatestFiniteMagnitude
             }

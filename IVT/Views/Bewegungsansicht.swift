@@ -53,17 +53,18 @@ struct Bewegungsansicht: View {
                         .listRowInsets(EdgeInsets())
 
                     NavigationLink {
-                        Routenansicht(schicht: s)
+                        Routenansicht(schicht: s,
+                                      schritte: s.laeuft ? zeit.bewegung.schritteSchicht : nil)
                     } label: {
                         Zeile(symbol: "point.topleft.down.to.point.bottomright.curvepath",
                               farbe: .indigo,
-                              titel: "Verlauf über die Zeit",
+                              titel: "Route und Auffälligkeiten",
                               wert: auffaellig(s))
                     }
                 } header: {
                     Text("Route")
                 } footer: {
-                    Text("Der Verlauf färbt die Strecke nach Tempo ein und setzt Infopunkte, wo du lange standest, zügig gingst oder kein Signal hattest.")
+                    Text("Die Karte setzt Infopunkte, wo du länger standest, immer wieder hinkamst oder kein Signal hattest.")
                 }
             }
 

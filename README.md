@@ -59,23 +59,27 @@ komplett. Die Mitteilung öffnet den fertigen Entwurf direkt. Drin steht:
 Im Reiter *Mehr → Wochenbericht* lässt sich jede Woche vorher ansehen,
 auch die letzte und vorletzte.
 
-## Routenverlauf
+## Route
 
 `Logic/Wegauswertung.swift` zerlegt die Wegpunkte einer Schicht in Abschnitte
-und sucht darin das Erwähnenswerte.
+und sucht darin das Erwähnenswerte. **Keine Tempostufen** — es gibt genau drei
+Zustände:
 
-**Tempo** (Meter je Sekunde): unter 0,3 gestanden · unter 0,9 langsam ·
-unter 1,6 normal · darüber zügig. Über 8 m/s ist kein Fußweg mehr, sondern
-ein GPS-Sprung — der wird wie eine Lücke behandelt.
+| Zustand | wann |
+|---|---|
+| **Unterwegs** | ab 0,3 m/s |
+| **Gestanden** | darunter |
+| **Kein Signal** | über 5 Minuten ohne Punkt, oder ein Sprung über 8 m/s |
 
-**Lücken** sind ehrlich: liegen zwischen zwei Punkten mehr als 5 Minuten,
-wird keine gerade Linie durch die Halle gezogen. Die Strecke ist dann
-gestrichelt und zählt null Meter.
+**Lücken sind ehrlich.** Liegen zwischen zwei Punkten mehr als 5 Minuten, wird
+keine gerade Linie durch die Halle gezogen. Die Strecke ist gestrichelt und
+zählt null Meter. Die Schritte zählt das iPhone in der Halle trotzdem weiter —
+die kommen aus dem Bewegungs-Coprozessor, nicht aus GPS.
 
-**Infopunkte** entstehen bei: Halten ab 8 Minuten, zügigen Strecken ab 80 m,
-Signallücken ab 10 Minuten, und Orten, zu denen er mindestens dreimal
-zurückkommt und insgesamt 15 Minuten verbringt. Höchstens 14 Stück —
-Start und Ende bleiben immer, vom Rest überlebt das Auffälligste.
+**Infopunkte** entstehen bei: Halten ab 8 Minuten, Signallücken ab 10 Minuten,
+und Orten, zu denen er mindestens dreimal zurückkommt und insgesamt 15 Minuten
+verbringt. Höchstens 14 Stück — Start und Ende bleiben immer, vom Rest überlebt
+das Auffälligste.
 
 Zwei Fallen, die beim Bauen zugeschnappt sind und jetzt zu sind:
 

@@ -579,12 +579,12 @@ input,select{font:inherit;color:inherit}
     <h3>Route</h3>
     <div class="liste">
       <button class="z" onclick="unter('route')">
-        <span class="sym" style="background:var(--indigo)">〰</span>Verlauf über die Zeit
+        <span class="sym" style="background:var(--indigo)">〰</span>Route und Auffälligkeiten
         <span class="wert" id="bw-punkte">—</span>
         <svg class="pfeil" viewBox="0 0 8 14"><path d="M1 1l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></button>
     </div>
-    <p class="fuss">Der Verlauf färbt die Strecke nach Tempo ein und setzt Infopunkte, wo du
-      lange standest, zügig gingst oder kein Signal hattest.</p>
+    <p class="fuss">Die Karte setzt Infopunkte, wo du länger standest, immer wieder
+      hinkamst oder kein Signal hattest.</p>
   </div>
 
   <div class="gruppe">
@@ -701,19 +701,18 @@ input,select{font:inherit;color:inherit}
 <div class="unter" id="u-route">
   <div class="kopfleiste" style="top:0">
     <button class="zurueck" onclick="zu();unter('bewegung')"><svg viewBox="0 0 11 19"><path d="M9.5 1.5L2 9.5l7.5 8" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Bewegung</button>
-    <div class="mitte">Routenverlauf</div><div style="width:92px"></div>
+    <div class="mitte">Route</div><div style="width:92px"></div>
   </div>
 
   <div class="kartenbox">
     <svg id="rk" viewBox="0 0 340 240"></svg>
-    <div class="legende" id="rlegende"></div>
   </div>
 
   <div class="reglerbox">
     <div class="reglerkopf">
       <span id="r-von">—</span>
       <span style="flex:1;text-align:center">
-        <b id="r-jetzt">—</b> <span id="r-art"></span>
+        <b id="r-jetzt">—</b>
       </span>
       <span id="r-bis">—</span>
     </div>
@@ -723,11 +722,10 @@ input,select{font:inherit;color:inherit}
   <div class="gruppe" style="margin-top:16px">
     <div class="liste">
       <div class="z" style="padding:14px 16px"><div class="kz" style="width:100%">
-        <div><div class="l">Strecke</div><div class="v" id="r-strecke">—</div></div>
-        <div><div class="l">In Bewegung</div><div class="v" id="r-geh">—</div></div>
+        <div><div class="l">Schritte</div><div class="v">6.412</div></div>
+        <div><div class="l">Draußen</div><div class="v" id="r-strecke">—</div></div>
         <div><div class="l">Gestanden</div><div class="v" id="r-stand">—</div></div>
       </div></div>
-      <div class="z">Schnitt beim Gehen<span class="wert" id="r-schnitt">—</span></div>
       <div class="z">Ohne Signal<span class="wert" id="r-luecke">—</span></div>
     </div>
   </div>
@@ -735,8 +733,10 @@ input,select{font:inherit;color:inherit}
   <div class="gruppe">
     <h3>Auffälligkeiten</h3>
     <div class="liste" id="r-liste"></div>
-    <p class="fuss">Automatisch erkannt: lange Halte, zügige Strecken, Orte mit mehreren
-      Besuchen und Abschnitte ohne Signal. Antippen zeigt die Stelle auf der Karte.</p>
+    <p class="fuss">Automatisch erkannt: längere Halte, Orte mit mehreren Besuchen und
+      Abschnitte ohne Signal. Antippen zeigt die Stelle auf der Karte.<br><br>
+      Die Strecke zählt nur, was draußen aufgezeichnet wurde. Schritte zählt das
+      iPhone auch in der Halle weiter.</p>
   </div>
 </div>
 
@@ -1263,8 +1263,8 @@ function mailWoche(){
 /* Derselbe Klassifizierer wie Wegauswertung.swift, gefüttert mit einem
    synthetischen Schichttag. 1 Karteneinheit = 1,1 m. */
 const EINHEIT = 1.1;
-const G_HALT = 0.3, G_LANGSAM = 0.9, G_ZUEGIG = 1.6, G_UNSINN = 8.0;
-const LUECKE_AB = 300, HALT_AB = 480, ZUEGIG_AB = 80, ZELLE = 30;
+const G_HALT = 0.3, G_UNSINN = 8.0;
+const LUECKE_AB = 300, HALT_AB = 480, ZELLE = 30;
 const LUECKE_INFO_AB = 600, MAX_INFO = 14, BESUCH_PAUSE = 120;
 
 const ORTE = {
@@ -1359,10 +1359,8 @@ function auswerten(pk){
     const v = m/dt;
     let art;
     if(dt >= LUECKE_AB || v > G_UNSINN) art = "luecke";
-    else if(v < G_HALT)    art = "halt";
-    else if(v < G_LANGSAM) art = "langsam";
-    else if(v < G_ZUEGIG)  art = "normal";
-    else                   art = "zuegig";
+    else if(v < G_HALT) art = "halt";
+    else                art = "bewegt";
     st.push({von:p.min, bis:q.min, a:[p.x,p.y], b:[q.x,q.y],
              m: art === "luecke" ? 0 : m, art});
   }
@@ -1384,13 +1382,13 @@ function auswerten(pk){
   }
   ab = glatt;
 
-  let meter = 0, geh = 0, stand = 0, luecken = 0, maxKmh = 0;
+  let meter = 0, geh = 0, stand = 0, luecken = 0;
   for(const x of ab){
     const d = (x.bis - x.von) * 60;
     meter += x.m;
     if(x.art === "halt") stand += d;
     else if(x.art === "luecke") luecken += d;
-    else { geh += d; maxKmh = Math.max(maxKmh, x.m/d*3.6); }
+    else geh += d;
   }
 
   // Infopunkte
@@ -1403,9 +1401,6 @@ function auswerten(pk){
     if(x.art === "halt" && d >= HALT_AB)
       inf.push({art:"halt", min:x.von, dauer:d, ort:mitte(x), titel:`${minText(d)} gestanden`,
         text:`Von ${uhr(x.von)} bis ${uhr(x.bis)} kaum bewegt.`});
-    else if(x.art === "zuegig" && x.m >= ZUEGIG_AB)
-      inf.push({art:"zuegig", min:x.von, dauer:d, ort:mitte(x), titel:"Zügig unterwegs",
-        text:`${x.m.toFixed(0)} m in ${minText(d)}, rund ${(x.m/d*3.6).toFixed(1)} km/h.`});
     else if(x.art === "luecke" && d >= LUECKE_INFO_AB)
       inf.push({art:"luecke", min:x.von, dauer:d, ort:mitte(x), titel:`${minText(d)} kein Signal`,
         text:`Zwischen ${uhr(x.von)} und ${uhr(x.bis)} kam nichts an — vermutlich in der Halle.`});
@@ -1442,7 +1437,7 @@ function auswerten(pk){
   let gezeigt = inf;
   if(inf.length > MAX_INFO){
     const fest = inf.filter(p => p.art === "start" || p.art === "ende");
-    const gew = p => ({aufenthalt:100000, luecke:50000, zuegig:20000, halt:0}[p.art] || 0)
+    const gew = p => ({aufenthalt:100000, luecke:50000, halt:0}[p.art] || 0)
                      + (p.dauer || 0);
     gezeigt = fest.concat(
       inf.filter(p => p.art !== "start" && p.art !== "ende")
@@ -1451,18 +1446,14 @@ function auswerten(pk){
   }
   gezeigt.sort((a,b) => a.min - b.min);
 
-  return {ab, inf: gezeigt, meter, geh, stand, luecken, maxKmh,
-          von: ab.length ? ab[0].von : 0, bis: ab.length ? ab[ab.length-1].bis : 0,
-          schnittKmh: geh > 0 ? meter/geh*3.6 : 0};
+  return {ab, inf: gezeigt, meter, geh, stand, luecken,
+          von: ab.length ? ab[0].von : 0, bis: ab.length ? ab[ab.length-1].bis : 0};
 }
 
-const RFARBE = {halt:"#FF9500", langsam:"#30B0C7", normal:"#007AFF",
-                zuegig:"#AF52DE", luecke:"#8E8E93"};
-const RART = {halt:"Gestanden", langsam:"Langsam", normal:"Normal",
-              zuegig:"Zügig", luecke:"Kein Signal"};
+const WEGFARBE = "#007AFF", LUECKEFARBE = "#8E8E93";
 const IFARBE = {start:"#34C759", ende:"#FF3B30", halt:"#FF9500",
-                zuegig:"#AF52DE", aufenthalt:"#5856D6", luecke:"#8E8E93"};
-const ISYM = {start:"▶", ende:"■", halt:"⏸", zuegig:"⚡", aufenthalt:"📍", luecke:"⃠"};
+                aufenthalt:"#5856D6", luecke:"#8E8E93"};
+const ISYM = {start:"▶", ende:"■", halt:"⏸", aufenthalt:"📍", luecke:"⃠"};
 
 let R = null, rGewaehlt = -1;
 
@@ -1484,11 +1475,6 @@ function routePosition(min){
   for(const a of R.ab) if(a.bis <= min) letzter = a;
   return letzter ? letzter.ko[letzter.ko.length-1] : null;
 }
-function routeArt(min){
-  if(!R) return null;
-  for(const a of R.ab) if(min >= a.von && min <= a.bis) return a.art;
-  return null;
-}
 
 function routeKarteZeichnen(jetzt){
   const kulisse = `
@@ -1509,9 +1495,9 @@ function routeKarteZeichnen(jetzt){
   const wege = R.ab.filter(a => a.ko.length > 1).map(a => {
     const d = "M" + a.ko.map(k => `${k[0].toFixed(1)} ${k[1].toFixed(1)}`).join(" L");
     return a.art === "luecke"
-      ? `<path d="${d}" stroke="${RFARBE.luecke}" stroke-width="2" fill="none"
+      ? `<path d="${d}" stroke="${LUECKEFARBE}" stroke-width="2" fill="none"
            stroke-dasharray="4 6" opacity=".55"/>`
-      : `<path d="${d}" stroke="${RFARBE[a.art]}" stroke-width="4.5" fill="none"
+      : `<path d="${d}" stroke="${WEGFARBE}" stroke-width="4.5" fill="none"
            stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>`;
   }).join("");
 
@@ -1535,10 +1521,6 @@ function routeKarteZeichnen(jetzt){
 function routeZeichnen(){
   if(!R) R = auswerten(punkteBauen());
 
-  document.getElementById("rlegende").innerHTML =
-    ["halt","langsam","normal","zuegig"].map(g =>
-      `<span><i style="background:${RFARBE[g]}"></i>${RART[g]}</span>`).join("");
-
   const sch = document.getElementById("r-schieber");
   sch.min = R.von; sch.max = R.bis; sch.step = 0.5;
   if(+sch.value < R.von || +sch.value > R.bis) sch.value = R.von;
@@ -1546,9 +1528,9 @@ function routeZeichnen(){
   document.getElementById("r-von").textContent = uhr(R.von);
   document.getElementById("r-bis").textContent = uhr(R.bis);
   document.getElementById("r-strecke").textContent = (R.meter/1000).toFixed(2) + " km";
-  document.getElementById("r-geh").textContent = minText(R.geh);
+
   document.getElementById("r-stand").textContent = minText(R.stand);
-  document.getElementById("r-schnitt").textContent = R.schnittKmh.toFixed(1) + " km/h";
+
   document.getElementById("r-luecke").textContent = minText(R.luecken);
   document.getElementById("bw-punkte").textContent = R.inf.length + " Punkte";
 
@@ -1572,10 +1554,6 @@ function routeZeichnen(){
 function reglerBewegt(){
   const jetzt = +document.getElementById("r-schieber").value;
   document.getElementById("r-jetzt").textContent = uhr(jetzt);
-  const art = routeArt(jetzt);
-  const el = document.getElementById("r-art");
-  el.textContent = art ? "· " + RART[art] : "";
-  el.style.color = art ? RFARBE[art] : "";
   routeKarteZeichnen(jetzt);
 }
 

@@ -3,10 +3,12 @@ import SwiftData
 import MapKit
 import CoreLocation
 
-/// Die Route einer Schicht über die Zeit: eingefärbt nach Tempo,
-/// mit Infopunkten da, wo etwas auffällig war.
+/// Die Route einer Schicht: Schritte, Karte, und Infopunkte da,
+/// wo etwas auffällig war. Keine Tempostufen.
 struct Routenansicht: View {
     var schicht: Schicht
+    /// Schrittzahl, bei laufender Schicht vom Bewegungsdienst durchgereicht
+    var schritte: Int?
 
     @State private var bild = Wegbild()
     @State private var reglerZeit: Date = .distantPast
@@ -16,9 +18,7 @@ struct Routenansicht: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            karte
-                .frame(maxHeight: .infinity)
-                .overlay(alignment: .bottom) { legende }
+            karte.frame(maxHeight: .infinity)
 
             if !bild.istLeer, let von = bild.von, let bis = bild.bis, bis > von {
                 regler(von: von, bis: bis)
@@ -26,7 +26,7 @@ struct Routenansicht: View {
 
             liste
         }
-        .navigationTitle("Routenverlauf")
+        .navigationTitle("Route")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear(perform: laden)
     }
@@ -38,14 +38,14 @@ struct Routenansicht: View {
             ForEach(bild.abschnitte) { a in
                 if a.koordinaten.count > 1 {
                     if a.gangart == .luecke {
-                        // Gestrichelt: hier ist nichts bekannt, die Linie
-                        // behauptet keinen tatsächlichen Weg.
+                        // Gestrichelt: hier ist nichts bekannt. Eine
+                        // durchgezogene Linie wäre eine Behauptung.
                         MapPolyline(coordinates: a.koordinaten)
-                            .stroke(.secondary.opacity(0.45),
+                            .stroke(.secondary.opacity(0.4),
                                     style: StrokeStyle(lineWidth: 3, dash: [5, 7]))
                     } else {
                         MapPolyline(coordinates: a.koordinaten)
-                            .stroke(farbe(a.gangart),
+                            .stroke(.accentColor,
                                     style: StrokeStyle(lineWidth: 5.5,
                                                        lineCap: .round, lineJoin: .round))
                     }
@@ -88,25 +88,10 @@ struct Routenansicht: View {
                 ContentUnavailableView(
                     "Keine Route",
                     systemImage: "map",
-                    description: Text("Für diese Schicht wurden keine brauchbaren Standorte aufgezeichnet. In der Halle ist das normal."))
+                    description: Text("Für diese Schicht wurden keine brauchbaren Standorte aufgezeichnet. In der Halle ist das normal — die Schritte zählt das iPhone trotzdem weiter."))
                     .background(.background)
             }
         }
-    }
-
-    private var legende: some View {
-        HStack(spacing: 11) {
-            ForEach([Gangart.halt, .langsam, .normal, .zuegig], id: \.rawValue) { g in
-                HStack(spacing: 4) {
-                    Capsule().fill(farbe(g)).frame(width: 13, height: 4)
-                    Text(g.anzeige).font(.caption2)
-                }
-            }
-        }
-        .padding(.horizontal, 11).padding(.vertical, 7)
-        .background(.regularMaterial, in: Capsule())
-        .padding(.bottom, 10)
-        .opacity(bild.istLeer ? 0 : 1)
     }
 
     // MARK: Regler
@@ -119,11 +104,6 @@ struct Routenansicht: View {
                 Text(reglerZeit.uhrzeit)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(folgtRegler ? .primary : .secondary)
-                if let a = bild.abschnitt(zu: reglerZeit), folgtRegler {
-                    Text("· \(a.gangart.anzeige)")
-                        .font(.subheadline)
-                        .foregroundStyle(farbe(a.gangart))
-                }
                 Spacer()
                 Text(bis.uhrzeit)
             }
@@ -152,22 +132,16 @@ struct Routenansicht: View {
         List {
             Section {
                 HStack(spacing: 0) {
+                    Kennzahl(wert: schritteText,
+                             beschriftung: "Schritte", symbol: "shoeprints.fill")
                     Kennzahl(wert: String(format: "%.2f km", bild.gesamtMeter / 1000),
-                             beschriftung: "Strecke", symbol: "point.topleft.down.to.point.bottomright.curvepath")
-                    Kennzahl(wert: Wegauswertung.minuten(bild.gehzeit),
-                             beschriftung: "In Bewegung", symbol: "figure.walk")
+                             beschriftung: "Draußen", symbol: "map")
                     Kennzahl(wert: Wegauswertung.minuten(bild.standzeit),
                              beschriftung: "Gestanden", symbol: "pause")
                 }
                 .padding(.vertical, 2)
-                if bild.schnittKmh > 0 {
-                    LabeledContent("Schnitt beim Gehen",
-                                   value: String(format: "%.1f km/h", bild.schnittKmh))
-                }
-                if bild.luecken > 60 {
-                    LabeledContent("Ohne Signal",
-                                   value: Wegauswertung.minuten(bild.luecken))
-                }
+            } footer: {
+                Text("Die Strecke zählt nur, was draußen aufgezeichnet wurde. Schritte zählt das iPhone auch in der Halle weiter.")
             }
 
             if !bild.auffaelligkeiten.isEmpty {
@@ -203,23 +177,25 @@ struct Routenansicht: View {
                 } header: {
                     Text("Auffälligkeiten")
                 } footer: {
-                    Text("Automatisch erkannt: lange Halte, zügige Strecken, Orte mit mehreren Besuchen und Abschnitte ohne Signal. Antippen zeigt die Stelle auf der Karte.")
+                    Text("Automatisch erkannt: längere Halte, Orte mit mehreren Besuchen und Abschnitte ohne Signal. Antippen zeigt die Stelle auf der Karte.")
                 }
             }
         }
         .listStyle(.insetGrouped)
-        .frame(height: 300)
-        .scrollContentBackground(.visible)
+        .frame(height: 290)
     }
 
     // MARK: Hilfen
 
+    private var schritteText: String {
+        let n = schritte ?? schicht.schritte
+        guard n > 0 else { return "—" }
+        return n.formatted(.number.grouping(.automatic))
+    }
+
     private func laden() {
         bild = Wegauswertung.auswerten(schicht.wegpunkte)
         reglerZeit = bild.von ?? schicht.start
-        if !bild.alleKoordinaten.isEmpty {
-            kamera = .automatic
-        }
     }
 
     private func waehle(_ p: Auffaelligkeit) {
@@ -233,22 +209,11 @@ struct Routenansicht: View {
         }
     }
 
-    private func farbe(_ g: Gangart) -> Color {
-        switch g {
-        case .halt:    return .orange
-        case .langsam: return .teal
-        case .normal:  return .blue
-        case .zuegig:  return .purple
-        case .luecke:  return .secondary
-        }
-    }
-
     private func punktfarbe(_ a: Auffaelligkeit.Art) -> Color {
         switch a {
         case .start:      return .green
         case .ende:       return .red
         case .halt:       return .orange
-        case .zuegig:     return .purple
         case .aufenthalt: return .indigo
         case .luecke:     return .gray
         }
