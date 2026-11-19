@@ -120,9 +120,7 @@ private struct Ergebnisabschnitt: View {
                           ? "shippingbox"
                           : (ergebnis.passt ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"))
                         .font(.title)
-                        .foregroundStyle(ergebnis.benoetigt == 0
-                                         ? .secondary
-                                         : (ergebnis.passt ? .green : .orange))
+                        .foregroundStyle(symbolfarbe)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(kopf).font(.headline)
                         Text(unterzeile)
@@ -171,6 +169,14 @@ private struct Ergebnisabschnitt: View {
             }
             .padding(.vertical, 6)
         }
+    }
+
+    /// Verschachtelte Ternaere im Aufruf leitet SwiftUI als
+    /// HierarchicalShapeStyle her und faellt dann ueber .green.
+    /// Ein benannter Color-Wert ist eindeutig.
+    private var symbolfarbe: Color {
+        if ergebnis.benoetigt == 0 { return .secondary }
+        return ergebnis.passt ? .green : .orange
     }
 
     private var frei: Int {

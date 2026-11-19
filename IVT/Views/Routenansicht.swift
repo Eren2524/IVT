@@ -36,7 +36,7 @@ struct Routenansicht: View {
         Map(position: $kamera) {
             ForEach(bild.abschnitte) { a in
                 MapPolyline(coordinates: a.koordinaten)
-                    .stroke(.accentColor,
+                    .stroke(Color.accentColor,
                             style: StrokeStyle(lineWidth: 5.5,
                                                lineCap: .round, lineJoin: .round))
             }
@@ -59,7 +59,7 @@ struct Routenansicht: View {
                 Annotation("", coordinate: ort) {
                     ZStack {
                         Circle().fill(.white).frame(width: 20, height: 20)
-                        Circle().fill(.accentColor).frame(width: 13, height: 13)
+                        Circle().fill(Color.accentColor).frame(width: 13, height: 13)
                     }
                     .shadow(radius: 3)
                     .opacity(bild.istPause(reglerZeit) ? 0.45 : 1)

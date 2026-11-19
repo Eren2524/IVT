@@ -125,7 +125,7 @@ private struct Schichtzeile: View {
                         Text(e.uhrzeit)
                     } else {
                         Text("läuft")
-                            .foregroundStyle(.accentColor)
+                            .foregroundStyle(Color.accentColor)
                     }
                 }
                 .font(.subheadline)
