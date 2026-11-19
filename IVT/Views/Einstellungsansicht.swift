@@ -76,13 +76,13 @@ struct Einstellungsansicht: View {
                 HStack {
                     Text("Adresse")
                     Spacer()
-                    TextField("vorname.name@ieb.de", text: $e.arbeitsmail)
+                    TextField("freilassen und selbst tippen", text: $e.arbeitsmail)
                         .multilineTextAlignment(.trailing)
                         .textContentType(.emailAddress)
                         .keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
-                        .foregroundStyle(e.mailGesetzt ? .secondary : .red)
+                        .foregroundStyle(.secondary)
                 }
                 HStack {
                     Text("Signatur")
@@ -92,27 +92,27 @@ struct Einstellungsansicht: View {
                         .foregroundStyle(.secondary)
                 }
             } header: {
-                Text("Arbeitsmail")
+                Text("Mailempfänger")
             } footer: {
                 if !Mailfenster.kannMailen {
                     Text("Auf diesem iPhone ist noch kein Mail-Konto eingerichtet. Ohne Konto kann die App keine Mail öffnen — dann bleibt der Weg über „PDF teilen“.")
-                } else if !e.mailGesetzt {
-                    Text("Ohne Adresse bleiben die Mailknöpfe aus.")
+                } else if e.mailGesetzt {
+                    Text("Entwürfe gehen an diese Adresse. Du kannst sie in der Mail vor dem Senden noch ändern.")
+                } else {
+                    Text("Ohne Adresse öffnet die Mail mit leerem An-Feld — Text und Anhänge sind trotzdem fertig, du tippst nur den Empfänger. Einmal hier eingetragen, fällt auch das weg.")
                 }
             }
 
             Section {
                 Toggle("Nach jedem Schadensfoto", isOn: $e.mailNachSchaden)
-                    .disabled(!e.mailGesetzt)
             } header: {
                 Text("Schadensmeldungen")
             } footer: {
-                Text("Die Mail wird mit Empfänger, Betreff, Text, allen Fotos und dem PDF fertig geöffnet. Auf Senden tippst du selbst — iOS erlaubt keiner App, im Hintergrund Mails zu verschicken.")
+                Text("Sobald ein Foto gespeichert ist, öffnet sich die Mail: Betreff, Text, alle Fotos und das PDF sind drin. Auf Senden tippst du selbst — iOS erlaubt keiner App, im Hintergrund Mails zu verschicken.")
             }
 
             Section {
                 Toggle("Wochenbericht erinnern", isOn: $e.wochenberichtAktiv)
-                    .disabled(!e.mailGesetzt)
 
                 if e.wochenberichtAktiv {
                     Picker("Tag", selection: $e.wochenberichtTag) {

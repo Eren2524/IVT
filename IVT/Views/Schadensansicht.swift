@@ -234,9 +234,9 @@ struct VorgangDetail: View {
                     Button {
                         mailVorbereiten()
                     } label: {
-                        Label("An Arbeitsmail senden", systemImage: "paperplane.fill")
+                        Label(e.mailGesetzt ? "An Arbeitsmail senden" : "Als Mail senden",
+                              systemImage: "paperplane.fill")
                     }
-                    .disabled(!e.mailGesetzt)
 
                     Button {
                         pdfBauen()
@@ -253,10 +253,10 @@ struct VorgangDetail: View {
                 } footer: {
                     if e.mailGesetzt {
                         Text(e.mailNachSchaden
-                             ? "Nach jedem Foto wird die Mail an \(e.arbeitsmail) automatisch fertig geöffnet."
+                             ? "Nach jedem Foto wird die Mail an \(e.arbeitsmail) fertig geöffnet — Fotos und PDF schon dran."
                              : "Mail an \(e.arbeitsmail) mit Fotos und PDF im Anhang.")
                     } else {
-                        Text("Arbeitsmail in den Einstellungen eintragen, dann geht die Meldung mit einem Tipp raus.")
+                        Text("Mail wird fertig geöffnet, Fotos und PDF schon dran — nur der Empfänger fehlt. Trag ihn in den Einstellungen ein, dann fällt auch das weg.")
                     }
                 }
             }
@@ -320,14 +320,15 @@ struct VorgangDetail: View {
         // Fuer das naechste Foto einen frischen Ort holen
         zeit.standort.einmalOrten()
 
-        // Wenn gewuenscht, gleich die Meldung fertig hinlegen
-        if e.mailNachSchaden, e.mailGesetzt {
+        // Wenn gewuenscht, gleich die Meldung fertig hinlegen.
+        // Eine hinterlegte Adresse ist dafuer nicht noetig; ohne sie
+        // oeffnet Mail nur mit leerem An-Feld.
+        if e.mailNachSchaden {
             mailVorbereiten()
         }
     }
 
     private func mailVorbereiten() {
-        guard e.mailGesetzt else { return }
         guard Mailfenster.kannMailen else {
             meldung = "Auf diesem iPhone ist kein Mail-Konto eingerichtet. Nimm „Als PDF teilen“."
             return

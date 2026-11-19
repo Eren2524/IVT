@@ -59,9 +59,9 @@ struct Wochenberichtansicht: View {
                     Button {
                         mailVorbereiten(b)
                     } label: {
-                        Label("An Arbeitsmail senden", systemImage: "paperplane.fill")
+                        Label(e.mailGesetzt ? "An Arbeitsmail senden" : "Als Mail senden",
+                              systemImage: "paperplane.fill")
                     }
-                    .disabled(!e.mailGesetzt)
 
                     Button {
                         pdfDatei = Dateiablage
@@ -72,10 +72,10 @@ struct Wochenberichtansicht: View {
                         Label("Nur PDF teilen", systemImage: "doc.richtext")
                     }
                 } footer: {
-                    if !e.mailGesetzt {
-                        Text("Zuerst die Arbeitsmail in den Einstellungen eintragen.")
+                    if e.mailGesetzt {
+                        Text("Mail an \(e.arbeitsmail) wird fertig geöffnet, Bericht als PDF im Anhang. Senden bestätigst du selbst — iOS lässt das keine App im Hintergrund.")
                     } else {
-                        Text("Mail an \(e.arbeitsmail) wird fertig geöffnet — Bericht als PDF im Anhang. Senden bestätigst du selbst, iOS lässt das keine App im Hintergrund.")
+                        Text("Mail wird fertig geöffnet, Bericht als PDF im Anhang — nur der Empfänger fehlt.")
                     }
                 }
             }

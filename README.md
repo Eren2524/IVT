@@ -29,6 +29,11 @@ Wege, und nur einer ist vertretbar:
 
 Es ist also **ein Tipp statt null** — aber nichts mehr zu tippen oder anzuhängen.
 
+Eine hinterlegte Empfängeradresse ist **nicht** Voraussetzung. Ohne sie öffnet
+Mail mit leerem An-Feld und dem Cursor darin; Betreff, Text und Anhänge sind
+trotzdem fertig. Einmal unter *Einstellungen → Mailempfänger* eingetragen,
+fällt auch das weg.
+
 ### Schadensmeldung
 
 Nach jedem Foto (Schalter in den Einstellungen) oder per Knopf im Vorgang:
@@ -115,9 +120,9 @@ zip -qry IVT.ipa Payload && rm -rf Payload
    zweite Frage kommt separat.
 3. Mitteilungen erlauben, sonst kommt weder die Pausenfrage noch der
    Wochenbericht durch.
-4. **Einstellungen → Arbeitsmail:** Adresse eintragen. Ohne Adresse bleiben
-   die Mailknöpfe aus. Dann die beiden Schalter setzen: „Nach jedem
-   Schadensfoto" und „Wochenbericht erinnern".
+4. **Einstellungen → Schadensmeldungen / Wochenbericht:** die beiden Schalter
+   setzen. Eine Empfängeradresse unter *Mailempfänger* ist optional — ohne sie
+   tippst du den Empfänger in der fertigen Mail selbst.
 
 ## Was die App nicht kann
 
@@ -131,7 +136,8 @@ zip -qry IVT.ipa Payload && rm -rf Payload
 - **Kein Mehrbenutzerbetrieb.** Bewusst: die App ist für einen Menschen,
   die Daten gehören nur ihm.
 - **Mail nicht vollautomatisch.** Siehe oben — Apple lässt das nicht zu.
-  Ohne eingerichtetes Mail-Konto auf dem iPhone bleibt nur „PDF teilen".
+  Ein Mail-Konto auf dem iPhone (iCloud genügt) muss eingerichtet sein,
+  sonst bleibt nur „PDF teilen".
 
 ## Struktur
 

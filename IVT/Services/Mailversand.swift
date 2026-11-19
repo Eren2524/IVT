@@ -24,6 +24,14 @@ struct Mailentwurf: Identifiable {
     var hatEmpfaenger: Bool {
         empfaenger.contains { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
     }
+
+    /// Ohne hinterlegte Adresse oeffnet Mail mit leerem An-Feld und
+    /// setzt den Cursor dorthin. Tippen, senden, fertig.
+    var empfaengerSauber: [String] {
+        empfaenger
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+    }
 }
 
 /// Der Mailentwurf als SwiftUI-Blatt.
@@ -38,7 +46,7 @@ struct Mailfenster: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> MFMailComposeViewController {
         let c = MFMailComposeViewController()
         c.mailComposeDelegate = context.coordinator
-        c.setToRecipients(entwurf.empfaenger.filter { !$0.isEmpty })
+        c.setToRecipients(entwurf.empfaengerSauber)
         c.setSubject(entwurf.betreff)
         c.setMessageBody(entwurf.text, isHTML: false)
         for a in entwurf.anhaenge {
