@@ -8,6 +8,11 @@ on:
 jobs:
   build:
     runs-on: macos-15
+    # Das Standard-Token ist bei neuen Repos nur lesend. Ohne das
+    # hier scheitert der Release-Schritt mit "Resource not accessible
+    # by integration", obwohl die IPA laengst fertig ist.
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v4

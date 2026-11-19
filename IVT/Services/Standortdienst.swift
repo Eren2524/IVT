@@ -105,9 +105,14 @@ final class Standortdienst: NSObject, ObservableObject {
     }
 }
 
+// CLLocationManager ruft seinen Delegate nicht zwingend auf dem
+// Hauptthread. Weil die Klasse @MainActor ist, waeren diese Methoden
+// sonst isoliert und erfuellen die Anforderung des Protokolls nicht -
+// in Swift 6 ein Fehler. Darum nonisolated; die Rumpfe springen selbst
+// auf den MainActor.
 extension Standortdienst: CLLocationManagerDelegate {
 
-    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+    nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         Task { @MainActor in
             rechte = manager.authorizationStatus
             if rechte == .authorizedAlways || rechte == .authorizedWhenInUse {
@@ -116,7 +121,7 @@ extension Standortdienst: CLLocationManagerDelegate {
         }
     }
 
-    func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
+    nonisolated func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
         guard region.identifier == Self.regionID else { return }
         Task { @MainActor in
             inDerFirma = true
@@ -124,7 +129,7 @@ extension Standortdienst: CLLocationManagerDelegate {
         }
     }
 
-    func locationManager(_ manager: CLLocationManager, didExitRegion region: CLRegion) {
+    nonisolated func locationManager(_ manager: CLLocationManager, didExitRegion region: CLRegion) {
         guard region.identifier == Self.regionID else { return }
         Task { @MainActor in
             inDerFirma = false
@@ -132,7 +137,7 @@ extension Standortdienst: CLLocationManagerDelegate {
         }
     }
 
-    func locationManager(_ manager: CLLocationManager,
+    nonisolated func locationManager(_ manager: CLLocationManager,
                          didDetermineState state: CLRegionState,
                          for region: CLRegion) {
         guard region.identifier == Self.regionID else { return }
@@ -145,7 +150,7 @@ extension Standortdienst: CLLocationManagerDelegate {
         }
     }
 
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+    nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let ort = locations.last else { return }
         Task { @MainActor in
             letzterOrt = ort
@@ -157,7 +162,7 @@ extension Standortdienst: CLLocationManagerDelegate {
         }
     }
 
-    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+    nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         Task { @MainActor in
             if (error as? CLError)?.code == .denied {
                 fehler = "Standortzugriff ist abgelehnt. In den iPhone-Einstellungen freigeben."
@@ -165,7 +170,7 @@ extension Standortdienst: CLLocationManagerDelegate {
         }
     }
 
-    func locationManager(_ manager: CLLocationManager,
+    nonisolated func locationManager(_ manager: CLLocationManager,
                          monitoringDidFailFor region: CLRegion?,
                          withError error: Error) {
         Task { @MainActor in
