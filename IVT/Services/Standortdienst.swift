@@ -11,7 +11,9 @@ import Combine
 @MainActor
 final class Standortdienst: NSObject, ObservableObject {
 
-    static let regionID = "ivt.firma"
+    /// nonisolated, weil die Delegate-Methoden sie lesen und selbst
+    /// nicht isoliert sind. Ein unveraenderlicher String ist gefahrlos.
+    nonisolated static let regionID = "ivt.firma"
 
     @Published private(set) var rechte: CLAuthorizationStatus = .notDetermined
     @Published private(set) var inDerFirma: Bool?
