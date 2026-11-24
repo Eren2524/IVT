@@ -66,7 +66,7 @@ final class Diktierdienst: ObservableObject {
         let sitzung = AVAudioSession.sharedInstance()
         do {
             try sitzung.setCategory(.playAndRecord, mode: .measurement,
-                                    options: [.duckOthers, .defaultToSpeaker, .allowBluetooth])
+                                    options: [.duckOthers, .defaultToSpeaker, .allowBluetoothHFP])
             try sitzung.setActive(true, options: .notifyOthersOnDeactivation)
         } catch {
             fehler = "Mikrofon konnte nicht gestartet werden."
