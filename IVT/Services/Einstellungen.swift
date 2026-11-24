@@ -126,6 +126,55 @@ final class Einstellungen: ObservableObject {
         "Sonstiges"
     ]
 
+    // MARK: Lademeter
+
+    /// Laenge einer Ladeflaeche (Koffer) im Zug in Metern
+    @Published var kofferLaenge: Double {
+        didSet { d.set(kofferLaenge, forKey: "kofferLaenge") }
+    }
+
+    // MARK: Diktat
+
+    /// Sprache nur auf dem iPhone erkennen (nichts geht an Apple)
+    @Published var diktatNurAufGeraet: Bool {
+        didSet { d.set(diktatNurAufGeraet, forKey: "diktatNurAufGeraet") }
+    }
+
+    // MARK: News
+
+    @Published var newsStichworte: [String] {
+        didSet { d.set(newsStichworte, forKey: "newsStichworte") }
+    }
+    @Published var newsAlarmAktiv: Bool {
+        didSet { d.set(newsAlarmAktiv, forKey: "newsAlarmAktiv") }
+    }
+    /// Abgeschaltete Quellen (Adressen)
+    @Published var newsQuellenAus: [String] {
+        didSet { d.set(newsQuellenAus, forKey: "newsQuellenAus") }
+    }
+    /// Eigene RSS-Adressen
+    @Published var newsEigeneQuellen: [String] {
+        didSet { d.set(newsEigeneQuellen, forKey: "newsEigeneQuellen") }
+    }
+
+    static let standardStichworte = [
+        "Ladungssicherung", "Maut", "Fahrverbot", "Lenkzeit", "Gefahrgut",
+        "Streik", "Sperrung", "Palette", "DSV", "Kontrolle", "Bußgeld", "Gesetz"
+    ]
+
+    // MARK: Vorlagen / Claude
+
+    /// Modell fuer "Mit Claude umschreiben"
+    @Published var claudeModell: String {
+        didSet { d.set(claudeModell, forKey: "claudeModell") }
+    }
+
+    static let claudeModelle: [(id: String, name: String)] = [
+        ("claude-sonnet-5-5", "Sonnet (empfohlen)"),
+        ("claude-haiku-5-5", "Haiku (schnell, günstig)"),
+        ("claude-opus-5-5", "Opus (gründlichste)")
+    ]
+
     // MARK: Init
 
     private init() {
@@ -154,5 +203,12 @@ final class Einstellungen: ObservableObject {
 
         fehlerKategorien = d.stringArray(forKey: "fehlerKategorien")
             ?? Einstellungen.standardKategorien
+        kofferLaenge = d.object(forKey: "kofferLaenge") as? Double ?? 7.2
+        diktatNurAufGeraet = d.object(forKey: "diktatNurAufGeraet") as? Bool ?? true
+        newsStichworte = d.stringArray(forKey: "newsStichworte") ?? Einstellungen.standardStichworte
+        newsAlarmAktiv = d.object(forKey: "newsAlarmAktiv") as? Bool ?? true
+        newsQuellenAus = d.stringArray(forKey: "newsQuellenAus") ?? []
+        newsEigeneQuellen = d.stringArray(forKey: "newsEigeneQuellen") ?? []
+        claudeModell = d.string(forKey: "claudeModell") ?? "claude-sonnet-5-5"
     }
 }

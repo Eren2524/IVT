@@ -16,8 +16,10 @@ struct Dashboard: View {
                 VStack(spacing: Stil.abstand) {
                     Zeitkachel()
                     SchnellzugriffReihe()
+                    SpruchKachel()
                     AufgabenKachel(aufgaben: Array(offeneAufgaben.prefix(4)))
                     BewegungKachel()
+                    NewsKachel()
                     if !vorgaenge.isEmpty {
                         FotoKachel(vorgaenge: Array(vorgaenge.prefix(3)))
                     }
@@ -188,6 +190,8 @@ private struct SchnellzugriffReihe: View {
     @State private var zeigeFehler = false
     @State private var zeigeNotiz = false
     @State private var zeigeFoto = false
+    @State private var zeigeDiktat = false
+    @Environment(\.modelContext) private var kontext
 
     var body: some View {
         HStack(spacing: 10) {
@@ -197,6 +201,14 @@ private struct SchnellzugriffReihe: View {
                          titel: "Notiz", farbe: .orange) { zeigeNotiz = true }
             Schnellknopf(symbol: "camera.fill",
                          titel: "Schaden", farbe: .blue) { zeigeFoto = true }
+            Schnellknopf(symbol: "mic.fill",
+                         titel: "Diktat", farbe: .pink) { zeigeDiktat = true }
+        }
+        .sheet(isPresented: $zeigeDiktat) {
+            DiktatBlatt(titel: "Sprachnotiz", mitTon: true) { text, ton, dauer in
+                kontext.insert(Sprachnotiz(text: text, tonDatei: ton?.lastPathComponent, dauer: dauer))
+                try? kontext.save()
+            }
         }
         .sheet(isPresented: $zeigeFehler) { FehlerErfassen() }
         .sheet(isPresented: $zeigeNotiz) { AufgabeBearbeiten(aufgabe: nil) }
@@ -350,6 +362,89 @@ private struct FotoKachel: View {
                     .buttonStyle(.plain)
                 }
             }
+        }
+    }
+}
+
+// MARK: - Spruch des Tages, Freitag, Feiertag
+
+private struct SpruchKachel: View {
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 60)) { kontext in
+            let jetzt = kontext.date
+            Karte(titel: titel(jetzt), symbol: "quote.bubble.fill") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(Sprueche.heute(jetzt))
+                        .font(.callout)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let zusatz = zusatz(jetzt) {
+                        Text(zusatz)
+                            .font(.footnote.weight(.medium))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+    }
+
+    private func titel(_ jetzt: Date) -> String {
+        Calendar.current.component(.weekday, from: jetzt) == 6 ? "Freitag" : "Spruch des Tages"
+    }
+
+    /// Freitags Countdown bis Wochenende, sonst naechster Feiertag
+    private func zusatz(_ jetzt: Date) -> String? {
+        let k = Calendar.current
+        if let name = Feiertage.name(am: jetzt) {
+            return "Heute ist \(name). Frei!"
+        }
+        if k.component(.weekday, from: jetzt) == 6,
+           let ende = Arbeitsplan.feierabend(am: jetzt), ende > jetzt {
+            return "Noch \(ende.timeIntervalSince(jetzt).alsStundenMinuten) bis zum Wochenende."
+        }
+        if let f = Feiertage.naechster(ab: jetzt) {
+            let tage = k.dateComponents([.day], from: k.startOfDay(for: jetzt), to: f.datum).day ?? 0
+            if tage <= 21 {
+                return tage == 1 ? "Morgen ist \(f.name)." : "\(f.name) in \(tage) Tagen."
+            }
+        }
+        return nil
+    }
+}
+
+// MARK: - News auf dem Startbildschirm
+
+private struct NewsKachel: View {
+    @EnvironmentObject private var e: Einstellungen
+    @ObservedObject private var dienst = Nachrichtendienst.shared
+
+    private var auswahl: [Nachricht] {
+        let treffer = dienst.nachrichten.filter { !Nachrichtendienst.treffer($0, e.newsStichworte).isEmpty }
+        return Array((treffer.isEmpty ? dienst.nachrichten : treffer).prefix(3))
+    }
+
+    var body: some View {
+        if !auswahl.isEmpty {
+            NavigationLink {
+                Newsansicht()
+            } label: {
+                Karte(titel: "News", symbol: "newspaper.fill") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        ForEach(auswahl) { n in
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(n.titel)
+                                    .font(.subheadline.weight(.medium))
+                                    .foregroundStyle(.primary)
+                                    .lineLimit(2)
+                                    .multilineTextAlignment(.leading)
+                                Text(n.quelle)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+            }
+            .buttonStyle(.plain)
         }
     }
 }

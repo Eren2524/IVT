@@ -141,8 +141,11 @@ struct FehlerErfassen: View {
                             Text(k).tag(k)
                         }
                     }
-                    TextField("Kurz dazu", text: $notiz, axis: .vertical)
-                        .lineLimit(2...5)
+                    HStack(alignment: .top) {
+                        TextField("Kurz dazu", text: $notiz, axis: .vertical)
+                            .lineLimit(2...5)
+                        DiktatKnopf(text: $notiz)
+                    }
                 }
 
                 Section("Dazu") {

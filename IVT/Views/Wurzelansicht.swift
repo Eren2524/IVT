@@ -6,7 +6,7 @@ struct Wurzelansicht: View {
     @EnvironmentObject private var wegweiser: Wegweiser
     @State private var auswahl: Reiter = .start
 
-    enum Reiter: Hashable { case start, zeit, laden, schaden, mehr }
+    enum Reiter: Hashable { case start, zeit, laden, vorlagen, mehr }
 
     var body: some View {
         TabView(selection: $auswahl) {
@@ -22,9 +22,9 @@ struct Wurzelansicht: View {
                 .tabItem { Label("Laden", systemImage: "shippingbox.fill") }
                 .tag(Reiter.laden)
 
-            Schadensansicht()
-                .tabItem { Label("Schäden", systemImage: "camera.fill") }
-                .tag(Reiter.schaden)
+            Vorlagenansicht()
+                .tabItem { Label("Vorlagen", systemImage: "doc.text.fill") }
+                .tag(Reiter.vorlagen)
 
             Mehransicht()
                 .tabItem { Label("Mehr", systemImage: "ellipsis.circle.fill") }
@@ -34,6 +34,9 @@ struct Wurzelansicht: View {
         // Tipp auf die Wochenbericht-Mitteilung fuehrt direkt dorthin
         .onChange(of: wegweiser.zeigeWochenbericht) {
             if wegweiser.zeigeWochenbericht { auswahl = .mehr }
+        }
+        .onChange(of: wegweiser.zeigeNews) {
+            if wegweiser.zeigeNews { auswahl = .mehr }
         }
         // Pausenfrage als Systemdialog, damit sie nicht zu uebersehen ist
         .alert("Pause?", isPresented: .init(
@@ -58,6 +61,47 @@ struct Mehransicht: View {
     var body: some View {
         NavigationStack {
             List {
+                Section {
+                    NavigationLink {
+                        Schadensansicht()
+                    } label: {
+                        Zeile(symbol: "camera.fill", farbe: .blue,
+                              titel: "Schäden", wert: nil)
+                    }
+                    NavigationLink {
+                        Sprachnotizenansicht()
+                    } label: {
+                        Zeile(symbol: "waveform", farbe: .red,
+                              titel: "Sprachnotizen", wert: nil)
+                    }
+                    NavigationLink {
+                        Newsansicht()
+                    } label: {
+                        Zeile(symbol: "newspaper.fill", farbe: .indigo,
+                              titel: "News", wert: nil)
+                    }
+                }
+                Section {
+                    NavigationLink {
+                        Erfolgsansicht()
+                    } label: {
+                        Zeile(symbol: "trophy.fill", farbe: .yellow,
+                              titel: "Erfolgs-Logbuch", wert: nil)
+                    }
+                    NavigationLink {
+                        Unterweisungsansicht()
+                    } label: {
+                        Zeile(symbol: "person.badge.shield.checkmark.fill", farbe: .green,
+                              titel: "Unterweisungen", wert: nil)
+                    }
+                    NavigationLink {
+                        Feiertagsansicht()
+                    } label: {
+                        Zeile(symbol: "calendar", farbe: .pink,
+                              titel: "Feiertage NRW",
+                              wert: Feiertage.naechster().map { $0.datum.datumKurz })
+                    }
+                }
                 Section {
                     NavigationLink {
                         Wochenberichtansicht()
@@ -100,6 +144,9 @@ struct Mehransicht: View {
             // Tipp auf die Mitteilung oeffnet den Bericht direkt
             .navigationDestination(isPresented: $wegweiser.zeigeWochenbericht) {
                 Wochenberichtansicht()
+            }
+            .navigationDestination(isPresented: $wegweiser.zeigeNews) {
+                Newsansicht()
             }
         }
     }

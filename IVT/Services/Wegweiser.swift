@@ -7,6 +7,7 @@ final class Wegweiser: ObservableObject {
     static let shared = Wegweiser()
 
     @Published var zeigeWochenbericht = false
+    @Published var zeigeNews = false
 
     private init() {}
 }
@@ -38,6 +39,9 @@ final class Mitteilungsannahme: NSObject, UNUserNotificationCenterDelegate {
         if info["ziel"] as? String == "wochenbericht"
             || kennung == Meldungen.wochenberichtID {
             Wegweiser.shared.zeigeWochenbericht = true
+        }
+        if info["ziel"] as? String == "news" {
+            Wegweiser.shared.zeigeNews = true
         }
     }
 }

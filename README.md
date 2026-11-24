@@ -4,6 +4,16 @@ Native iPhone-App für Enriques Arbeit als Versandleiter bei IEB Brilon.
 SwiftUI, SwiftData, keine Fremdbibliotheken. **Alle Daten bleiben auf dem
 iPhone** — kein Server, keine iCloud, keine Synchronisierung.
 
+## Neu in 1.1
+
+- **Vorlagen** (eigener Reiter): Art wählen (Arbeitsanweisung, Anleitung, Leitfaden, Protokoll, Änderungsmitteilung, Checkliste, Übergabe, Unterweisung, Vorfallsbericht, frei), losreden, Dokument kommt raus. Ohne Internet: Füllwörter raus, Schritte, Gliederung. Mit eigenem Claude-API-Schlüssel (Schlüsselbund, nur auf Tipp): echtes Umschreiben, Lücken als [ERGÄNZEN: …]. Export als PDF oder Mail.
+- **Diktat**: Mikrofon neben allen Notizfeldern, Sprachnotizen mit Ton und Text. Standard: Erkennung nur auf dem iPhone.
+- **Lademeter** mit eigenen Maßen (Laden > oben): Formel L × B ÷ 2,40 und realer Stellplan, Vergleich Zug / Sattel / Motorwagen / 7,5 t / Transporter, Maße merken.
+- **News**: fünf öffentliche Logistik-Feeds, Filter Recht / Stichworte / Gemerkt, Mitteilung bei Stichwort, Abruf im Hintergrund (Takt bestimmt iOS).
+- **NRW-Feiertage**: kein Soll an Feiertagen, Liste unter Mehr.
+- **Erfolgs-Logbuch**, **Unterweisungen** (Erinnerung 14 Tage vorher), **Spruch des Tages**, Freitags-Countdown.
+- Schäden liegen jetzt unter Mehr; Schnellzugriff „Schaden“ auf Start bleibt.
+
 ## Was drin ist
 
 | Bereich | Was es tut |

@@ -11,7 +11,7 @@ struct Schadensansicht: View {
     @State private var neu = false
 
     var body: some View {
-        NavigationStack {
+        Group {
             List {
                 ForEach(vorgaenge) { v in
                     NavigationLink {
@@ -113,8 +113,11 @@ struct VorgangBearbeiten: View {
                     TextField("Lieferschein oder Auftrag", text: $lieferschein)
                 }
                 Section("Beschreibung") {
-                    TextField("Was ist passiert?", text: $notiz, axis: .vertical)
-                        .lineLimit(3...8)
+                    HStack(alignment: .top) {
+                        TextField("Was ist passiert?", text: $notiz, axis: .vertical)
+                            .lineLimit(3...8)
+                        DiktatKnopf(text: $notiz)
+                    }
                 }
             }
             .navigationTitle(vorgang == nil ? "Neuer Schaden" : "Bearbeiten")

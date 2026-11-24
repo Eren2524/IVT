@@ -18,6 +18,15 @@ struct Palettenansicht: View {
     var body: some View {
         NavigationStack {
             List {
+                Section {
+                    NavigationLink {
+                        Lademeteransicht()
+                    } label: {
+                        Zeile(symbol: "ruler.fill", farbe: .teal,
+                              titel: "Lademeter mit eigenen Maßen", wert: nil)
+                    }
+                }
+
                 Ergebnisabschnitt(ergebnis: ergebnis)
 
                 Section {

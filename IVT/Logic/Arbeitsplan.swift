@@ -60,8 +60,10 @@ struct Arbeitsplan {
         pausen: [(.fruehstueck, fruehstueck)]
     )
 
-    /// Plan fuer ein Datum, nil am Wochenende.
+    /// Plan fuer ein Datum, nil am Wochenende und an NRW-Feiertagen.
     static func plan(am datum: Date, kalender: Calendar = .current) -> Tagesplan? {
+        // Gesetzlicher Feiertag in NRW: frei, kein Soll
+        if Feiertage.istFeiertag(datum, kalender: kalender) { return nil }
         // Calendar: 1 = Sonntag, 2 = Montag ... 6 = Freitag, 7 = Samstag
         switch kalender.component(.weekday, from: datum) {
         case 2, 3, 4, 5: return langerTag

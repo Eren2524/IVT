@@ -7,8 +7,8 @@ options:
 
 settings:
   base:
-    MARKETING_VERSION: "1.0"
-    CURRENT_PROJECT_VERSION: "1"
+    MARKETING_VERSION: "1.1"
+    CURRENT_PROJECT_VERSION: "2"
     SWIFT_VERSION: "5.9"
     DEVELOPMENT_TEAM: ""
     CODE_SIGN_IDENTITY: ""
@@ -48,8 +48,17 @@ targets:
         NSPhotoLibraryAddUsageDescription: >-
           IVT speichert gestempelte Schadensfotos in deiner Fotobibliothek,
           wenn du das moechtest.
+        NSMicrophoneUsageDescription: >-
+          IVT nimmt deine Stimme auf, wenn du diktierst oder eine
+          Sprachnotiz machst.
+        NSSpeechRecognitionUsageDescription: >-
+          IVT wandelt dein Diktat in Text um, standardmaessig nur auf
+          dem iPhone.
+        BGTaskSchedulerPermittedIdentifiers:
+          - de.enriquediaz.ivt.news
         UIBackgroundModes:
           - location
+          - fetch
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: de.enriquediaz.ivt

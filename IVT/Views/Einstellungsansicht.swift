@@ -11,6 +11,8 @@ struct Einstellungsansicht: View {
 
     @State private var zeigeKategorien = false
     @State private var neueKategorie = ""
+    @State private var schluesselEingabe = ""
+    @State private var schluesselDa = Schluesselbund.vorhanden
 
     var body: some View {
         List {
@@ -231,6 +233,49 @@ struct Einstellungsansicht: View {
                 }
             }
 
+            // MARK: Diktat
+            Section {
+                Toggle("Nur auf dem iPhone erkennen", isOn: $e.diktatNurAufGeraet)
+            } header: {
+                Text("Diktat")
+            } footer: {
+                Text(e.diktatNurAufGeraet
+                     ? "Sprache wird auf dem iPhone in Text umgewandelt, nichts verlässt das Gerät. Klappt das auf deinem iPhone nicht, hier ausschalten: dann nutzt iOS die Apple-Spracherkennung."
+                     : "Apple-Spracherkennung: Die Aufnahme geht zur Erkennung an Apple. Genauer bei Fachbegriffen, braucht Internet.")
+            }
+
+            // MARK: Vorlagen / Claude
+            Section {
+                if schluesselDa {
+                    LabeledContent("API-Schlüssel", value: "hinterlegt")
+                    Button("Schlüssel entfernen", role: .destructive) {
+                        Schluesselbund.loesche()
+                        schluesselDa = false
+                    }
+                } else {
+                    SecureField("sk-ant-…", text: $schluesselEingabe)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                    Button("Sichern") {
+                        let k = schluesselEingabe.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if Schluesselbund.speichere(k) {
+                            schluesselDa = true
+                            schluesselEingabe = ""
+                        }
+                    }
+                    .disabled(schluesselEingabe.trimmingCharacters(in: .whitespaces).count < 20)
+                }
+                Picker("Modell", selection: $e.claudeModell) {
+                    ForEach(Einstellungen.claudeModelle, id: \.id) { m in
+                        Text(m.name).tag(m.id)
+                    }
+                }
+            } header: {
+                Text("Vorlagen: Mit Claude umschreiben")
+            } footer: {
+                Text("Optional. Den Schlüssel legst du in der Claude-Konsole an (console.anthropic.com > API Keys); abgerechnet wird über dein API-Guthaben, nicht über das Pro-Abo. Er liegt nur im Schlüsselbund dieses iPhones. Gesendet wird nur der Diktattext, wenn du auf „Mit Claude umschreiben“ tippst.")
+            }
+
             // MARK: Daten
             Section {
                 LabeledContent("Speicherort", value: "nur dieses iPhone")
@@ -238,7 +283,7 @@ struct Einstellungsansicht: View {
             } header: {
                 Text("Daten")
             } footer: {
-                Text("Alles bleibt lokal. Kein Server, keine iCloud, keine Weitergabe. Was rausgeht, geht über deine eigene Mail-App und nur, wenn du auf Senden tippst.")
+                Text("Alles bleibt lokal. Kein Server, keine iCloud, keine Weitergabe. Was rausgeht, geht über deine eigene Mail-App und nur, wenn du auf Senden tippst. Ausnahmen, nur wenn du sie nutzt: News liest öffentliche Feeds (über dich wird nichts gesendet), „Mit Claude umschreiben“ schickt den einen Diktattext an Anthropic.")
             }
 
             Section {

@@ -14,7 +14,9 @@ struct IVTApp: App {
             Schicht.self, Pause.self, Wegpunkt.self,
             Aufgabe.self,
             Schadensvorgang.self, Schadensfoto.self,
-            Fehlereintrag.self, Ladeplan.self
+            Fehlereintrag.self, Ladeplan.self,
+            Palettenmass.self, Sprachnotiz.self, Vorlagendokument.self,
+            Erfolg.self, Unterweisung.self
         ])
         // Alles bleibt auf dem iPhone: keine CloudKit-Konfiguration,
         // kein Server, keine Synchronisierung.
@@ -41,6 +43,8 @@ struct IVTApp: App {
                     zeit.starten(kontext: behaelter.mainContext)
                     await Meldungen.shared.rechteAnfragen()
                     Meldungen.shared.quartalsauswertungPlanen()
+                    // News mehrmals am Tag im Hintergrund holen (iOS bestimmt den Takt)
+                    Nachrichtendienst.hintergrundPlanen()
                     // Termin neu setzen, falls die Einstellung sich geaendert hat
                     if einstellungen.wochenberichtAktiv {
                         Meldungen.shared.wochenberichtPlanen(
@@ -51,5 +55,8 @@ struct IVTApp: App {
                 }
         }
         .modelContainer(behaelter)
+        .backgroundTask(.appRefresh(Nachrichtendienst.aufgabeID)) {
+            await Nachrichtendienst.hintergrundAbruf()
+        }
     }
 }

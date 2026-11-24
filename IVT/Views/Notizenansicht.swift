@@ -175,8 +175,11 @@ struct AufgabeBearbeiten: View {
                 Section {
                     TextField("Was ist zu tun?", text: $titel)
                         .textInputAutocapitalization(.sentences)
-                    TextField("Notiz", text: $notiz, axis: .vertical)
-                        .lineLimit(2...6)
+                    HStack(alignment: .top) {
+                        TextField("Notiz", text: $notiz, axis: .vertical)
+                            .lineLimit(2...6)
+                        DiktatKnopf(text: $notiz)
+                    }
                 }
 
                 Section {

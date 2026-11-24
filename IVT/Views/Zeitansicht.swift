@@ -233,8 +233,11 @@ struct Schichtbearbeiten: View {
                 }
 
                 Section("Notiz") {
-                    TextField("Was war an dem Tag?", text: $schicht.notiz, axis: .vertical)
-                        .lineLimit(2...5)
+                    HStack(alignment: .top) {
+                        TextField("Was war an dem Tag?", text: $schicht.notiz, axis: .vertical)
+                            .lineLimit(2...5)
+                        DiktatKnopf(text: $schicht.notiz)
+                    }
                 }
             }
             .navigationTitle(schicht.start.datumKurz)
