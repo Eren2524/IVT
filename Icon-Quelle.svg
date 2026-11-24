@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3A95FF"/>
+      <stop offset="1" stop-color="#0040D0"/>
+    </linearGradient>
+    <linearGradient id="box" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#E3EDFF"/>
+    </linearGradient>
+    <filter id="sh" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#001A66" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <!-- feine Glanzkante oben -->
+  <ellipse cx="512" cy="-120" rx="760" ry="420" fill="#FFFFFF" opacity="0.10"/>
+
+  <g filter="url(#sh)">
+    <!-- obere Kiste -->
+    <rect x="330" y="232" width="364" height="230" rx="34" fill="url(#box)"/>
+    <rect x="482" y="232" width="60" height="230" fill="#0A6CFF" opacity="0.22"/>
+    <!-- untere Kisten -->
+    <rect x="200" y="486" width="300" height="250" rx="34" fill="url(#box)"/>
+    <rect x="524" y="486" width="300" height="250" rx="34" fill="url(#box)"/>
+    <rect x="322" y="486" width="56" height="250" fill="#0A6CFF" opacity="0.22"/>
+    <rect x="646" y="486" width="56" height="250" fill="#0A6CFF" opacity="0.22"/>
+    <!-- Palette -->
+    <rect x="176" y="758" width="672" height="40" rx="14" fill="#FFFFFF"/>
+    <rect x="206" y="798" width="74" height="52" rx="10" fill="#FFFFFF"/>
+    <rect x="475" y="798" width="74" height="52" rx="10" fill="#FFFFFF"/>
+    <rect x="744" y="798" width="74" height="52" rx="10" fill="#FFFFFF"/>
+    <rect x="176" y="850" width="672" height="34" rx="12" fill="#FFFFFF"/>
+  </g>
+
+  <!-- Haken-Abzeichen -->
+  <g filter="url(#sh)">
+    <circle cx="742" cy="262" r="104" fill="#34C759"/>
+    <path d="M690 264 L728 302 L800 222" fill="none" stroke="#FFFFFF" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
