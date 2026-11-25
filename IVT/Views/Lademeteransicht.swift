@@ -93,6 +93,8 @@ struct Lademeteransicht: View {
             }
         }
         .navigationTitle("Lademeter")
+        .scrollDismissesKeyboard(.interactively)
+        .zifferntastaturFertig()
         .sheet(isPresented: $eigeneOffen) {
             EigenesMass { p, merken in
                 dazu(p)
@@ -189,11 +191,7 @@ private struct Postenzeile: View {
                         .monospacedDigit()
                 }
                 Spacer(minLength: 8)
-                Text("\(posten.anzahl)")
-                    .font(.system(.title3, design: .rounded, weight: .semibold))
-                    .monospacedDigit()
-                    .frame(minWidth: 34, alignment: .trailing)
-                    .contentTransition(.numericText())
+                Zahlenfeld(wert: $posten.anzahl)
                 Stepper("", value: $posten.anzahl, in: 0...200)
                     .labelsHidden()
             }
@@ -261,12 +259,18 @@ struct EigenesMass: View {
                     }
                 }
                 Section {
-                    Stepper("Anzahl: \(anzahl)", value: $anzahl, in: 1...200)
+                    HStack {
+                        Text("Anzahl")
+                        Spacer()
+                        Zahlenfeld(wert: $anzahl, bereich: 1...200)
+                        Stepper("", value: $anzahl, in: 1...200).labelsHidden()
+                    }
                     Toggle("Doppelstock ladbar", isOn: $stapelbar)
                     Toggle("Maß für später merken", isOn: $merken)
                 }
             }
             .navigationTitle(vorlage == nil ? "Eigene Maße" : "Ändern")
+            .zifferntastaturFertig()
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { schliessen() } }

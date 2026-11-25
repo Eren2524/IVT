@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Apple-Look: Systemfarben, Systemschrift, abgerundete Karten.
 /// Keine eigenen Markenfarben, damit sich die App wie iOS anfuehlt.
@@ -142,5 +143,62 @@ extension Date {
         f.locale = Locale(identifier: "de_DE")
         f.dateFormat = "EEEE"
         return f.string(from: self)
+    }
+}
+
+// MARK: - Zahlenfeld
+
+/// Zahl zum Antippen: oeffnet den Ziffernblock, alter Wert ist markiert
+/// und wird beim Tippen ersetzt. Plus/Minus bleiben daneben.
+struct Zahlenfeld: View {
+    @Binding var wert: Int
+    var bereich: ClosedRange<Int> = 0...200
+    @FocusState private var fokus: Bool
+    @State private var text = ""
+
+    var body: some View {
+        TextField("0", text: $text)
+            .keyboardType(.numberPad)
+            .multilineTextAlignment(.center)
+            .font(.system(.title3, design: .rounded, weight: .semibold))
+            .monospacedDigit()
+            .foregroundStyle(wert == 0 && !fokus ? Color.secondary : Color.primary)
+            .frame(width: 56, height: 36)
+            .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .focused($fokus)
+            .onAppear { text = "\(wert)" }
+            .onChange(of: wert) { if !fokus { text = "\(wert)" } }
+            .onChange(of: text) {
+                let ziffern = text.filter(\.isNumber)
+                if ziffern != text { text = ziffern; return }
+                let zahl = min(bereich.upperBound, max(bereich.lowerBound, Int(ziffern) ?? 0))
+                if zahl != wert { wert = zahl }
+            }
+            .onChange(of: fokus) {
+                if fokus {
+                    // Alles markieren, damit die neue Zahl die alte ersetzt
+                    DispatchQueue.main.async {
+                        UIApplication.shared.sendAction(#selector(UIResponder.selectAll(_:)), to: nil, from: nil, for: nil)
+                    }
+                } else {
+                    text = "\(wert)"
+                }
+            }
+            .accessibilityLabel("Anzahl")
+    }
+}
+
+extension View {
+    /// "Fertig"-Knopf über dem Ziffernblock
+    func zifferntastaturFertig() -> some View {
+        toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Fertig") {
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                }
+                .fontWeight(.semibold)
+            }
+        }
     }
 }

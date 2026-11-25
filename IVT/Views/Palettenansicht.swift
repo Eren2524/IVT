@@ -63,6 +63,8 @@ struct Palettenansicht: View {
                 }
             }
             .navigationTitle("Laden")
+            .scrollDismissesKeyboard(.interactively)
+            .zifferntastaturFertig()
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -88,7 +90,7 @@ struct Palettenansicht: View {
 
 // MARK: - Zaehlzeile
 
-/// Eine Zeile, ein Stepper. Im Hof zaehlt Tempo, nicht Tipparbeit.
+/// Eine Zeile: Zahl antippen und tippen, oder Plus/Minus.
 private struct Zaehlzeile: View {
     var titel: String
     var hinweis: String
@@ -103,12 +105,7 @@ private struct Zaehlzeile: View {
                     .foregroundStyle(.secondary)
             }
             Spacer(minLength: 8)
-            Text("\(wert)")
-                .font(.system(.title3, design: .rounded, weight: .semibold))
-                .monospacedDigit()
-                .foregroundStyle(wert == 0 ? .secondary : .primary)
-                .frame(minWidth: 34, alignment: .trailing)
-                .contentTransition(.numericText())
+            Zahlenfeld(wert: $wert)
             Stepper("", value: $wert, in: 0...200)
                 .labelsHidden()
         }
