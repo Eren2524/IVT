@@ -5,9 +5,9 @@ import Combine
 /// Schrittzaehler plus Stillstandserkennung.
 ///
 /// Der Schrittzaehler liest rueckblickend aus dem Bewegungs-Coprozessor,
-/// die App muss dafuer nicht laufen. Die Stillstandserkennung vergleicht
-/// den Schrittstand in festen Abstaenden: bleibt er ueber die eingestellte
-/// Schwelle stehen, war vermutlich Pause.
+/// die App muss dafuer nicht laufen. Die Stillstandserkennung fragt alle
+/// zwei Minuten: wie viele Schritte in den letzten X Minuten (Schwelle)?
+/// Fast keine, dann war vermutlich Pause.
 @MainActor
 final class Bewegungsdienst: ObservableObject {
 
@@ -21,9 +21,11 @@ final class Bewegungsdienst: ObservableObject {
 
     private let pedometer = CMPedometer()
     private var schichtStart: Date?
-    private var letzterStand: Int = 0
     private var pruefung: Timer?
     private var schonGemeldet = false
+    /// Ab hier wird gezaehlt: Schichtbeginn oder letzte beantwortete Frage.
+    /// So fragt die App nach einem "Nein" erst nach einem vollen neuen Zeitfenster wieder.
+    private var zaehlenAb = Date()
     private var schwelle: TimeInterval = 15 * 60
 
     // MARK: Schritte
@@ -63,7 +65,7 @@ final class Bewegungsdienst: ObservableObject {
         self.schwelle = TimeInterval(schwelleMinuten * 60)
         self.schonGemeldet = false
         self.stillSeit = nil
-        self.letzterStand = 0
+        self.zaehlenAb = schichtStart
 
         pedometer.startUpdates(from: schichtStart) { daten, _ in
             guard let daten else { return }
@@ -95,32 +97,47 @@ final class Bewegungsdienst: ObservableObject {
     func stillstandZuruecksetzen() {
         stillSeit = nil
         schonGemeldet = false
-        letzterStand = schritteSchicht
+        zaehlenAb = Date()
     }
 
-    private func pruefen() {
-        let stand = schritteSchicht
+    /// Unter so vielen Schritten im ganzen Zeitfenster gilt er als stehend.
+    /// Ein paar Schritte am Platz (Ware greifen, umdrehen) zaehlen nicht als Bewegung.
+    private let mindestSchritte = 40
 
-        if stand > letzterStand + 15 {
-            // Deutlich mehr Schritte: er ist unterwegs
-            letzterStand = stand
+    /// Fragt den Schrittzaehler direkt nach dem Zeitfenster der Schwelle.
+    /// Live-Updates des Pedometers kommen im Hintergrund nicht an; die
+    /// rueckwirkende Abfrage liest dagegen immer den echten Stand aus dem
+    /// Bewegungs-Coprozessor. Frueher sah ein eingefrorener Zaehler wie
+    /// stundenlanger Stillstand aus.
+    private func pruefen() {
+        guard schichtStart != nil else { return }
+        let jetzt = Date()
+        let von = jetzt.addingTimeInterval(-schwelle)
+        // Erst pruefen, wenn seit Schichtbeginn bzw. letzter Antwort
+        // ein volles Zeitfenster vergangen ist
+        if von < zaehlenAb { return }
+
+        pedometer.queryPedometerData(from: von, to: jetzt) { daten, fehler in
+            // Ohne Daten keine Aussage, lieber nicht fragen
+            guard fehler == nil, let daten else { return }
+            let schritte = daten.numberOfSteps.intValue
+            Task { @MainActor in self.auswerten(schritte: schritte, von: von, jetzt: jetzt) }
+        }
+        heuteLaden()
+        if let start = schichtStart { schichtLaden(ab: start) }
+    }
+
+    private func auswerten(schritte: Int, von: Date, jetzt: Date) {
+        if schritte >= mindestSchritte {
+            // Unterwegs: alles zuruecksetzen, naechster Stillstand darf wieder fragen
             stillSeit = nil
             schonGemeldet = false
             return
         }
-
-        // Kaum Bewegung
-        if stillSeit == nil {
-            stillSeit = Date()
-            return
-        }
-
-        guard let seit = stillSeit, !schonGemeldet else { return }
-        let dauer = Date().timeIntervalSince(seit)
-        if dauer >= schwelle {
-            schonGemeldet = true
-            beiStillstand?(dauer)
-        }
+        if stillSeit == nil { stillSeit = von }
+        guard !schonGemeldet, let seit = stillSeit else { return }
+        schonGemeldet = true
+        beiStillstand?(jetzt.timeIntervalSince(seit))
     }
 
     /// Wie lange steht er jetzt schon, fuer die Anzeige.

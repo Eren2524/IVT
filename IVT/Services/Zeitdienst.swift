@@ -41,6 +41,16 @@ final class Zeitdienst: ObservableObject {
 
         bewegung.beiStillstand = { [weak self] dauer in
             guard let self, self.laufendeSchicht != nil, self.laufendePause == nil else { return }
+            // Stillstand in der festen Fruehstuecks- oder Mittagspause ist normal
+            let jetzt = Date()
+            let von = jetzt.addingTimeInterval(-dauer)
+            let inFesterPause = Arbeitsplan.pausenZeiten(am: jetzt).contains { p in
+                p.von < jetzt && p.bis > von
+            }
+            if inFesterPause {
+                self.bewegung.stillstandZuruecksetzen()
+                return
+            }
             self.pausenfrageOffen = dauer
             Meldungen.shared.pausenfrage(stillstand: dauer)
         }
